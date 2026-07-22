@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.publishDate.toISOString(),
+  ...(post.data.updatedDate ? { dateModified: post.data.updatedDate.toISOString() } : {}),
+  author: { '@type': 'Person', name: post.data.author },
+};
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  jsonLd={articleSchema}
+  publishDate={post.data.publishDate}
+  updatedDate={post.data.updatedDate}
+  author={post.data.author}
+>
+  <article class="post section">
+    <p class="eyebrow">
+      {post.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+      · {post.data.author}
+    </p>
+    <h1 class="post__title">{post.data.title}</h1>
+    <p class="post__lede">{post.data.description}</p>
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .section { padding: 3rem 0 4rem; max-width: 42rem; }
+  .post__title { font-size: 2rem; margin: 0.5rem 0 1rem; }
+  .post__lede { color: var(--ink-muted); font-size: 1.05rem; }
+  .prose :global(h2) { font-size: 1.3rem; margin-top: 2rem; }
+  .prose :global(p) { color: var(--ink-muted); }
+</style>

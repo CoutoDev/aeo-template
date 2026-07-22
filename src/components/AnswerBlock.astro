@@ -1,0 +1,65 @@
+---
+// Cada bloco responde UMA pergunta de forma autocontida: a resposta
+// direta (1-3 frases) fica isolada visualmente, como o texto de um
+// rótulo de saca — é o trecho que agentes de IA tendem a extrair e citar.
+// A elaboração abaixo é o material de aprofundamento, para leitores humanos e SEO.
+interface Props {
+  question: string;
+  shortAnswer: string;
+  index?: number;
+  id?: string;
+}
+const { question, shortAnswer, index, id } = Astro.props;
+---
+
+<article class="answer-block" id={id}>
+  <div class="tag">
+    {index !== undefined && <span class="tag__num">{String(index).padStart(2, '0')}</span>}
+    <span class="tag__label">Pergunta</span>
+  </div>
+  <h3 class="answer-block__q">{question}</h3>
+  <p class="answer-block__a"><strong>{shortAnswer}</strong></p>
+  <div class="answer-block__body">
+    <slot />
+  </div>
+</article>
+
+<style>
+  .answer-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 2px;
+    padding: 1.75rem 1.75rem 1.5rem;
+  }
+  .tag {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .tag__num {
+    color: var(--gold);
+    font-size: 0.8rem;
+  }
+  .answer-block__q {
+    font-size: 1.2rem;
+    margin-bottom: 0.6rem;
+  }
+  .answer-block__a {
+    margin: 0 0 0.85rem;
+    color: var(--ink);
+  }
+  .answer-block__body {
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+  }
+  .answer-block__body :global(p) {
+    margin: 0.5rem 0;
+  }
+</style>

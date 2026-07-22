@@ -1,0 +1,140 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AnswerBlock from '../components/AnswerBlock.astro';
+import { getCollection } from 'astro:content';
+
+const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order).slice(0, 3);
+const posts = (await getCollection('posts')).sort(
+  (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
+);
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.data.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.data.shortAnswer },
+  })),
+};
+---
+
+<BaseLayout
+  title="Café especial de origem única, torrado em Campinas"
+  description="Torra Alta compra direto de produtores no Sul de Minas e Cerrado Mineiro e torra em lotes pequenos para cafeterias e consumidores em todo o Brasil."
+  jsonLd={faqSchema}
+>
+  <section class="hero">
+    <p class="eyebrow">Torrefação de café especial · Campinas, SP</p>
+    <h1>Do produtor à xícara,<br />sem atravessador e sem torra genérica.</h1>
+    <p class="hero__lede">
+      Compramos direto de oito fazendas parceiras no Sul de Minas e no Cerrado Mineiro,
+      e torramos em lotes de até 25kg — pequenos o bastante para ajustar a curva de torra
+      a cada origem, em vez de aplicar a mesma curva para todo o catálogo.
+    </p>
+    <div class="hero__specs">
+      <div><span class="eyebrow">Origem</span><strong>Sul de Minas · Cerrado Mineiro</strong></div>
+      <div><span class="eyebrow">Lote</span><strong>Até 25kg</strong></div>
+      <div><span class="eyebrow">Entrega</span><strong>Todo o Brasil</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Perguntas mais frequentes</p>
+    <h2 class="section__title">Antes de pedir, as dúvidas que mais chegam</h2>
+    <div class="answer-grid">
+      {faqs.map((f, i) => (
+        <AnswerBlock question={f.data.question} shortAnswer={f.data.shortAnswer} index={i + 1} />
+      ))}
+    </div>
+    <a class="see-all" href="/perguntas-frequentes">Ver todas as perguntas →</a>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Jornal da torra</p>
+    <h2 class="section__title">Guias sobre origem, torra e preparo</h2>
+    <div class="post-grid">
+      {posts.map((p) => (
+        <a class="post-card" href={`/jornal/${p.id}`}>
+          <span class="eyebrow">{p.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          <h3>{p.data.title}</h3>
+          <p>{p.data.description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 4.5rem 0 3.5rem;
+    max-width: 42rem;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 4vw, 2.9rem);
+    line-height: 1.15;
+    margin: 0.6rem 0 1.25rem;
+  }
+  .hero__lede {
+    color: var(--ink-muted);
+    font-size: 1.05rem;
+    max-width: 36rem;
+  }
+  .hero__specs {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 2.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .hero__specs strong {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .section {
+    padding: 2.5rem 0;
+  }
+  .section__title {
+    font-size: 1.6rem;
+    margin: 0.4rem 0 1.75rem;
+  }
+  .answer-grid {
+    display: grid;
+    gap: 1.1rem;
+  }
+  .see-all {
+    display: inline-block;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.25rem;
+  }
+  .post-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 1.5rem;
+    text-decoration: none;
+  }
+  .post-card h3 {
+    color: var(--ink);
+    font-size: 1.1rem;
+    margin: 0.5rem 0 0.5rem;
+  }
+  .post-card p {
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+</style>

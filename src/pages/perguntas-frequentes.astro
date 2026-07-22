@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AnswerBlock from '../components/AnswerBlock.astro';
+import { getCollection, render } from 'astro:content';
+
+const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order);
+const rendered = await Promise.all(faqs.map((f) => render(f)));
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.data.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.data.shortAnswer },
+  })),
+};
+---
+
+<BaseLayout
+  title="Perguntas frequentes"
+  description="Respostas diretas sobre café especial, torra, armazenamento e método de preparo, com aprofundamento logo abaixo de cada resposta."
+  jsonLd={faqSchema}
+>
+  <section class="section">
+    <p class="eyebrow">Perguntas frequentes</p>
+    <h1 class="section__title">Respostas diretas, uma por vez</h1>
+    <div class="answer-list">
+      {faqs.map((f, i) => {
+        const { Content } = rendered[i];
+        return (
+          <AnswerBlock question={f.data.question} shortAnswer={f.data.shortAnswer} index={i + 1} id={f.id}>
+            <Content />
+          </AnswerBlock>
+        );
+      })}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section { padding: 3rem 0 4rem; }
+  .section__title { font-size: 1.9rem; margin: 0.4rem 0 2rem; }
+  .answer-list { display: grid; gap: 1.1rem; max-width: 42rem; }
+</style>

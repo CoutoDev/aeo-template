@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('posts')).sort(
+  (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
+);
+---
+
+<BaseLayout
+  title="Jornal da torra"
+  description="Guias sobre origem, processo, torra e método de preparo, escritos pela equipe da Torra Alta."
+>
+  <section class="section">
+    <p class="eyebrow">Jornal da torra</p>
+    <h1 class="section__title">Guias sobre origem, torra e preparo</h1>
+    <div class="post-list">
+      {posts.map((p) => (
+        <a class="post-row" href={`/jornal/${p.id}`}>
+          <span class="eyebrow">{p.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          <h2>{p.data.title}</h2>
+          <p>{p.data.description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section { padding: 3rem 0 4rem; max-width: 42rem; }
+  .section__title { font-size: 1.9rem; margin: 0.4rem 0 2rem; }
+  .post-list { display: grid; gap: 2rem; }
+  .post-row { text-decoration: none; display: block; padding-bottom: 2rem; border-bottom: 1px solid var(--line); }
+  .post-row h2 { color: var(--ink); font-size: 1.3rem; margin: 0.4rem 0 0.5rem; }
+  .post-row p { color: var(--ink-muted); margin: 0; }
+</style>

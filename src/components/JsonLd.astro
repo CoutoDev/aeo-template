@@ -1,0 +1,10 @@
+---
+// Injeta schema.org estruturado (JSON-LD) em qualquer página.
+// Uso: <JsonLd data={{ "@type": "FAQPage", ... }} />
+interface Props {
+  data: Record<string, unknown>;
+}
+const { data } = Astro.props;
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(data)} />

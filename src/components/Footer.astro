@@ -1,0 +1,37 @@
+---
+---
+<footer class="site-footer">
+  <div class="wrap site-footer__row">
+    <p>© {new Date().getFullYear()} Torra Alta · Campinas, SP</p>
+    <div class="site-footer__links">
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/sitemap-index.xml">sitemap</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    margin-top: 4rem;
+  }
+  .site-footer__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0;
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+  }
+  .site-footer__links {
+    display: flex;
+    gap: 1.25rem;
+  }
+  .site-footer__links a {
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+  .site-footer__links a:hover {
+    color: var(--gold-soft);
+  }
+</style>
