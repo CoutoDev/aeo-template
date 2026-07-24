@@ -1,6 +1,6 @@
 # Nome da Marca
 
-> Descrição de 1-2 frases usada como meta description e resumo padrão da marca.
+> Descrição curta da marca (1-2 frases), usada no schema.org Organization e no llms.txt.
 
 ## Perguntas frequentes
 
@@ -14,30 +14,30 @@ Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-2
 
 ### Pergunta frequente de exemplo número 3?
 Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
-Fonte: https://minhamarca.example.com/perguntas-frequentes#como-armazenar-cafe
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-3
 
 ### Pergunta frequente de exemplo número 4?
 Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
-Fonte: https://minhamarca.example.com/perguntas-frequentes#o-que-e-torra-alta
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-4
 
 ### Pergunta frequente de exemplo número 5?
 Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
-Fonte: https://minhamarca.example.com/perguntas-frequentes#qual-a-diferenca-cafe-especial
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-5
 
 ### Pergunta frequente de exemplo número 6?
 Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
-Fonte: https://minhamarca.example.com/perguntas-frequentes#qual-metodo-preparo-escolher
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-6
 
 ### Pergunta frequente de exemplo número 7?
 Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
-Fonte: https://minhamarca.example.com/perguntas-frequentes#fazem-entrega-para-cafeterias
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-7
 
 ## Jornal (artigos)
 
 ### Título de artigo de exemplo número 1
 Descrição de 1-2 frases resumindo o artigo, usada como meta description e nos cards de listagem.
-Fonte: https://minhamarca.example.com/jornal/como-ler-rotulo-cafe-especial
+Fonte: https://minhamarca.example.com/jornal/artigo-1
 
 ### Título de artigo de exemplo número 2
 Descrição de 1-2 frases resumindo o artigo, usada como meta description e nos cards de listagem.
-Fonte: https://minhamarca.example.com/jornal/guia-torra-clara-vs-escura
+Fonte: https://minhamarca.example.com/jornal/artigo-2

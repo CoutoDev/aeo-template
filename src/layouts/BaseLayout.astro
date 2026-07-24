@@ -28,7 +28,7 @@ const ORG = {
 const pageSchemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const themeVars = `:root{--bg:${theme.bg};--surface:${theme.surface};--surface-raised:${theme.surfaceRaised};--ink:${theme.ink};--ink-muted:${theme.inkMuted};--gold:${theme.gold};--gold-soft:${theme.goldSoft};--cherry:${theme.cherry};--line:${theme.line}}`;
+const themeVars = `:root{--bg:${theme.bg};--surface:${theme.surface};--surface-raised:${theme.surfaceRaised};--ink:${theme.ink};--ink-muted:${theme.inkMuted};--gold:${theme.gold};--gold-soft:${theme.goldSoft};--cherry:${theme.cherry};--line:${theme.line};--font-display:${theme.fontDisplay};--font-body:${theme.fontBody};--font-mono:${theme.fontMono};--radius:${theme.radius};--accent-border-width:${theme.accentBorderWidth};--space-unit:${theme.spaceUnit};--space-ratio:${theme.spaceRatio}}html{font-size:calc(100% * ${theme.typeScale})}`;
 ---
 
 <!doctype html>
@@ -38,6 +38,9 @@ const themeVars = `:root{--bg:${theme.bg};--surface:${theme.surface};--surface-r
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title} · {brand.name}</title>
     <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href={theme.fontImportUrl} />
     <style set:html={themeVars} />
     <link rel="canonical" href={canonicalURL} />
 

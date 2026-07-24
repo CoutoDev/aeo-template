@@ -1,12 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Os custom properties de cor, fonte, radius e --space-unit/--space-ratio
+   são injetados em tempo de build por BaseLayout.astro a partir de THEME_*
+   (ver src/lib/brand.ts) — não ficam fixos aqui. O import da fonte também
+   é dinâmico (THEME_FONT_IMPORT_URL), via <link> no <head> de BaseLayout.
 
-/* Os custom properties de cor (--bg, --surface, --ink, --gold etc.) são
-   injetados em tempo de build por BaseLayout.astro a partir de THEME_*
-   (ver src/lib/brand.ts) — não ficam fixos aqui. */
+   A escala de espaçamento nomeada é estrutura do template: os degraus abaixo
+   propagam em qualquer atualização, só --space-unit/--space-ratio (os
+   insumos) são de marca. */
 :root {
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --space-xs: calc(var(--space-unit) / var(--space-ratio) / var(--space-ratio));
+  --space-sm: calc(var(--space-unit) / var(--space-ratio));
+  --space-md: var(--space-unit);
+  --space-lg: calc(var(--space-unit) * var(--space-ratio));
+  --space-xl: calc(var(--space-unit) * var(--space-ratio) * var(--space-ratio));
+  --space-2xl: calc(var(--space-unit) * var(--space-ratio) * var(--space-ratio) * var(--space-ratio));
+  --space-3xl: calc(var(--space-unit) * var(--space-ratio) * var(--space-ratio) * var(--space-ratio) * var(--space-ratio));
 }
 
 * { box-sizing: border-box; }
@@ -42,7 +49,7 @@ button:focus-visible {
 .wrap {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 var(--space-lg);
 }
 
 .eyebrow {

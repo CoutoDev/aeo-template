@@ -28,6 +28,17 @@ const schema = z.object({
   THEME_GOLD_SOFT: optional('#e4c877'),
   THEME_CHERRY: optional('#8b3a2e'),
   THEME_LINE: optional('#3c2f27'),
+  THEME_FONT_DISPLAY: optional("'Fraunces', Georgia, serif"),
+  THEME_FONT_BODY: optional("'Inter', system-ui, sans-serif"),
+  THEME_FONT_MONO: optional("'JetBrains Mono', ui-monospace, monospace"),
+  THEME_FONT_IMPORT_URL: optional(
+    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap'
+  ),
+  THEME_TYPE_SCALE: optional('1'),
+  THEME_SPACE_UNIT: optional('1rem'),
+  THEME_SPACE_RATIO: optional('1.5'),
+  THEME_RADIUS: optional('2px'),
+  THEME_ACCENT_BORDER_WIDTH: optional('3px'),
 });
 
 function loadConfig() {
@@ -62,4 +73,13 @@ export const theme = {
   goldSoft: env.THEME_GOLD_SOFT,
   cherry: env.THEME_CHERRY,
   line: env.THEME_LINE,
+  fontDisplay: env.THEME_FONT_DISPLAY,
+  fontBody: env.THEME_FONT_BODY,
+  fontMono: env.THEME_FONT_MONO,
+  fontImportUrl: env.THEME_FONT_IMPORT_URL,
+  typeScale: env.THEME_TYPE_SCALE,
+  spaceUnit: env.THEME_SPACE_UNIT,
+  spaceRatio: env.THEME_SPACE_RATIO,
+  radius: env.THEME_RADIUS,
+  accentBorderWidth: env.THEME_ACCENT_BORDER_WIDTH,
 };

@@ -28,15 +28,15 @@ const { question, shortAnswer, index, id } = Astro.props;
   .answer-block {
     background: var(--surface);
     border: 1px solid var(--line);
-    border-left: 3px solid var(--gold);
-    border-radius: 2px;
-    padding: 1.75rem 1.75rem 1.5rem;
+    border-left: var(--accent-border-width) solid var(--gold);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
   }
   .tag {
     display: flex;
     align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 0.75rem;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
     font-family: var(--font-mono);
     font-size: 0.7rem;
     letter-spacing: 0.1em;
@@ -49,10 +49,10 @@ const { question, shortAnswer, index, id } = Astro.props;
   }
   .answer-block__q {
     font-size: 1.2rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: var(--space-sm);
   }
   .answer-block__a {
-    margin: 0 0 0.85rem;
+    margin: 0 0 var(--space-md);
     color: var(--ink);
   }
   .answer-block__body {
@@ -60,6 +60,6 @@ const { question, shortAnswer, index, id } = Astro.props;
     font-size: 0.95rem;
   }
   .answer-block__body :global(p) {
-    margin: 0.5rem 0;
+    margin: var(--space-xs) 0;
   }
 </style>
