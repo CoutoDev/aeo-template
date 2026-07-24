@@ -27,6 +27,17 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}.entrypoints=websecure"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
       - "traefik.http.services.${BRAND_SLUG:-brand}.loadbalancer.server.port=80"
+    # Teto de recurso por marca — relevante em VPS com várias marcas atrás do
+    # mesmo Traefik: sem isso, uma marca sob pico de tráfego pode disputar
+    # CPU/memória com as outras que compartilham o host. Nginx estático
+    # sozinho usa poucos MB; a folga é pra buffers/gzip/conexões simultâneas.
+    # Calibrado pra site de conteúdo/marketing de tráfego baixo-médio — se
+    # uma marca crescer além disso, é sinal de tirá-la da VPS compartilhada.
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
     profiles:
       - prod
 
