@@ -1,0 +1,75 @@
+---
+import { theme } from '../lib/brand';
+import { themeLabel } from '../lib/theme-css';
+
+const initialLabel = themeLabel(theme.defaultMode);
+---
+
+<button type="button" class="theme-toggle" data-theme-toggle aria-label={initialLabel}>
+  <svg class="icon icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+  <svg class="icon icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .theme-toggle:hover {
+    color: var(--accent-soft);
+    border-color: var(--accent-soft);
+  }
+  .icon {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+  .icon--moon {
+    display: none;
+  }
+  html[data-theme='light'] .icon--sun {
+    display: none;
+  }
+  html[data-theme='light'] .icon--moon {
+    display: block;
+  }
+</style>
+
+<script>
+  import { themeLabel } from '../lib/theme-css';
+
+  // O modo pode ter sido corrigido pelo script bloqueante do <head> (system
+  // preference / localStorage) depois do aria-label ser renderizado no
+  // servidor a partir do THEME_DEFAULT_MODE — resincroniza aqui.
+  document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+    btn.setAttribute('aria-label', themeLabel(document.documentElement.dataset.theme ?? 'dark'));
+  });
+
+  document.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement).closest('[data-theme-toggle]');
+    if (!btn) return;
+
+    const root = document.documentElement;
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {}
+    btn.setAttribute('aria-label', themeLabel(next));
+  });
+</script>

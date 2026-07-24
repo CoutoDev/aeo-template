@@ -22,6 +22,14 @@ html {
   scroll-behavior: smooth;
 }
 
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -29,15 +37,16 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {
-  color: var(--gold-soft);
+  color: var(--accent-soft);
 }
 
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--gold-soft);
+  outline: 2px solid var(--accent-soft);
   outline-offset: 3px;
 }
 
@@ -57,7 +66,7 @@ button:focus-visible {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent);
 }
 
 h1, h2, h3 {

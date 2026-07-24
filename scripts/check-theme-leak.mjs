@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Garante que nenhuma cor hex fique hardcoded fora de src/lib/brand.ts.
-// Cor de marca só pode existir ali (lida de THEME_* em build time) e fluir
-// como var(--token) — nunca literal em componente/CSS. Ver template.manifest.json.
+// Garante que nenhuma cor hex fique hardcoded fora de src/lib/. Cor de marca
+// só pode existir em src/lib/brand.ts (lida de THEME_* em build time) e fluir
+// como var(--token) — nunca literal em componente/CSS. src/lib/ também
+// hospeda src/lib/brand-presets.ts, paletas de comparação só de dev — por
+// isso o diretório inteiro fica de fora do scan. Ver template.manifest.json.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

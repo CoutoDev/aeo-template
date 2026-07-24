@@ -1,5 +1,10 @@
 ---
 import { brand } from '../lib/brand';
+import ThemeToggle from './ThemeToggle.astro';
+import BrandPresetSwitcher from './BrandPresetSwitcher.astro';
+
+// Só em dev: nunca entra no build de produção (astro build => DEV === false).
+const isDev = import.meta.env.DEV;
 ---
 <header class="site-header">
   <div class="wrap site-header__row">
@@ -9,6 +14,8 @@ import { brand } from '../lib/brand';
       <a href="/sobre">Sobre</a>
       <a href="/perguntas-frequentes">Perguntas</a>
       <a href="/jornal">Jornal</a>
+      <ThemeToggle />
+      {isDev && <BrandPresetSwitcher />}
     </nav>
   </div>
 </header>
@@ -34,6 +41,7 @@ import { brand } from '../lib/brand';
   }
   .nav {
     display: flex;
+    align-items: center;
     gap: var(--space-lg);
   }
   .nav a {
@@ -42,6 +50,6 @@ import { brand } from '../lib/brand';
     font-size: 0.9rem;
   }
   .nav a:hover {
-    color: var(--gold-soft);
+    color: var(--accent-soft);
   }
 </style>

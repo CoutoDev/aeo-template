@@ -2,7 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
-import { brand, theme } from '../lib/brand';
+import { brand, theme, themeVars } from '../lib/brand';
 import '../styles/global.css';
 
 interface Props {
@@ -27,15 +27,32 @@ const ORG = {
 
 const pageSchemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-
-const themeVars = `:root{--bg:${theme.bg};--surface:${theme.surface};--surface-raised:${theme.surfaceRaised};--ink:${theme.ink};--ink-muted:${theme.inkMuted};--gold:${theme.gold};--gold-soft:${theme.goldSoft};--cherry:${theme.cherry};--line:${theme.line};--font-display:${theme.fontDisplay};--font-body:${theme.fontBody};--font-mono:${theme.fontMono};--radius:${theme.radius};--accent-border-width:${theme.accentBorderWidth};--space-unit:${theme.spaceUnit};--space-ratio:${theme.spaceRatio}}html{font-size:calc(100% * ${theme.typeScale})}`;
 ---
 
 <!doctype html>
-<html lang={brand.locale}>
+<html lang={brand.locale} data-theme={theme.defaultMode}>
   <head>
     <meta charset="UTF-8" />
+    <!-- Resolve o tema (localStorage > preferência do SO > default da marca)
+         antes do primeiro paint, pra não piscar o tema errado. Precisa ser
+         is:inline (síncrono, sem defer) e vir antes do <style> de tokens. -->
+    <script is:inline>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var stored = localStorage.getItem('theme');
+          if (stored === 'dark' || stored === 'light') {
+            root.dataset.theme = stored;
+          } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            root.dataset.theme = 'light';
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            root.dataset.theme = 'dark';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>{title} · {brand.name}</title>
     <meta name="description" content={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
