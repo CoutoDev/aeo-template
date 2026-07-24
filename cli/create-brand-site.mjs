@@ -20,6 +20,10 @@ const COPY_EXCLUDE = new Set([
   '.env.production',
   'package-lock.json',
   'cli',
+  // Infra da VPS (proxy reverso Traefik compartilhado entre marcas), não de
+  // uma instância — roda uma vez por VPS, não é duplicada por marca. Ver
+  // traefik/README.md.
+  'traefik',
 ]);
 
 function printUsage() {
@@ -33,6 +37,9 @@ Opcoes:
   --locale <locale>       Locale (default: pt-BR)
   --dev-port <porta>      Porta do docker compose "dev" (default: 4321)
   --web-port <porta>      Porta do docker compose "prod" (default: 8080)
+  --domain <dominio>      Dominio publico (ex: minhamarca.com.br), usado
+                          pelo Traefik compartilhado (ver traefik/README.md).
+                          Default: extraido de --site-url.
 
 Campos obrigatorios nao passados via flag sao pedidos interativamente.`);
 }
@@ -47,6 +54,7 @@ const { values, positionals } = parseArgs({
     locale: { type: 'string' },
     'dev-port': { type: 'string' },
     'web-port': { type: 'string' },
+    domain: { type: 'string' },
     help: { type: 'boolean', default: false },
   },
 });
@@ -74,6 +82,14 @@ async function prompt(rl, question, fallback) {
   return answer || fallback || '';
 }
 
+function domainFromUrl(siteUrl) {
+  try {
+    return new URL(siteUrl).hostname;
+  } catch {
+    return '';
+  }
+}
+
 async function collectAnswers() {
   const needsPrompt = !values['site-name'] || !values['site-url'] || !values.description;
   if (!needsPrompt) {
@@ -85,6 +101,7 @@ async function collectAnswers() {
       locale: values.locale ?? 'pt-BR',
       devPort: values['dev-port'] ?? '4321',
       webPort: values['web-port'] ?? '8080',
+      domain: values.domain ?? domainFromUrl(values['site-url']),
     };
   }
 
@@ -97,7 +114,8 @@ async function collectAnswers() {
     const locale = values.locale ?? (await prompt(rl, 'Locale', 'pt-BR'));
     const devPort = values['dev-port'] ?? (await prompt(rl, 'Porta do docker compose "dev"', '4321'));
     const webPort = values['web-port'] ?? (await prompt(rl, 'Porta do docker compose "prod"', '8080'));
-    return { siteName, siteUrl, description, location, locale, devPort, webPort };
+    const domain = values.domain ?? (await prompt(rl, 'Domínio público (Traefik)', domainFromUrl(siteUrl)));
+    return { siteName, siteUrl, description, location, locale, devPort, webPort, domain };
   } finally {
     rl.close();
   }
@@ -128,6 +146,8 @@ await cp(PACKAGE_ROOT, targetDir, {
   },
 });
 
+const slug = slugify(answers.siteName) || 'brand-site';
+
 const envContent = `SITE_NAME=${answers.siteName}
 SITE_URL=${answers.siteUrl}
 SITE_DESCRIPTION=${answers.description}
@@ -135,13 +155,19 @@ SITE_LOCATION=${answers.location}
 SITE_LOCALE=${answers.locale}
 DEV_PORT=${answers.devPort}
 WEB_PORT=${answers.webPort}
+
+# Usados pelo proxy compartilhado (Traefik) quando esta marca roda numa VPS
+# com outras marcas — ver traefik/README.md no template. BRAND_SLUG precisa
+# ser único entre as marcas que compartilham a mesma VPS/Traefik.
+DOMAIN=${answers.domain}
+BRAND_SLUG=${slug}
 `;
 await writeFile(path.join(targetDir, '.env'), envContent, 'utf-8');
 
 const pkgPath = path.join(targetDir, 'package.json');
 const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
 const templateVersion = pkg.version;
-pkg.name = slugify(answers.siteName) || 'brand-site';
+pkg.name = slug;
 delete pkg.bin;
 await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
 
@@ -163,4 +189,8 @@ console.log(`\nPróximos passos:
   npm run dev                        # dev local
   docker compose --profile dev up    # dev em container
   docker compose --profile prod up   # build + serve estático via nginx
+
+Rodando várias marcas na mesma VPS atrás do proxy compartilhado (Traefik)?
+Ver traefik/README.md no template — precisa de "docker network create edge"
+uma única vez por VPS antes do primeiro "docker compose --profile prod up".
 `);

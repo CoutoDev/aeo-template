@@ -11,6 +11,7 @@
     "src",
     "public",
     "scripts",
+    "traefik",
     "astro.config.mjs",
     "tsconfig.json",
     "Dockerfile",

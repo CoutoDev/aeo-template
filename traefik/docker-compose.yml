@@ -1,0 +1,36 @@
+services:
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      # Só expõe container que tiver "traefik.enable=true" explícito — uma
+      # marca esquecida sem essa label não vaza pra internet sem querer.
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=edge
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?defina ACME_EMAIL em traefik/.env}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    networks:
+      - edge
+
+networks:
+  # Rede compartilhada entre este stack e o docker-compose.yml de cada
+  # marca. Precisa existir ANTES de subir qualquer um dos dois:
+  #   docker network create edge
+  edge:
+    external: true
+
+volumes:
+  letsencrypt:

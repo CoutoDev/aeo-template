@@ -43,10 +43,10 @@ Edite o conteúdo de exemplo (`src/content/pages/*.md`, `src/content/faq/*.md`,
 | `docker compose --profile dev up` | Dev com hot-reload em container |
 | `docker compose --profile prod up -d` | Build + serve estático via Nginx |
 
-Rodando várias marcas ao mesmo tempo no mesmo host: cada instância tem seu
-próprio `DEV_PORT`/`WEB_PORT` no `.env` (ver `.env.example`), então basta
-`docker compose --profile prod up -d` em cada pasta de instância sem
-colisão de porta.
+Cada instância tem seu próprio `DEV_PORT`/`WEB_PORT` no `.env`, então rodar
+várias marcas ao mesmo tempo no mesmo host não colide porta — mas se cada
+marca precisa do próprio domínio (não só porta), ver
+[Múltiplas marcas na mesma VPS](#múltiplas-marcas-na-mesma-vps) abaixo.
 
 ## Variáveis de ambiente
 
@@ -67,6 +67,35 @@ instância entra no build context do Docker de propósito (ver comentário em
 - `src/content/faq/*.md` — cada arquivo é uma pergunta (vira bloco visual +
   entrada no FAQPage JSON-LD + linha no `llms.txt`).
 - `src/content/posts/*.md` — artigos do blog (`/jornal`).
+
+## Múltiplas marcas na mesma VPS
+
+Cada instância já roda isolada em container; pra cada marca ter seu próprio
+domínio (não só uma porta) na mesma VPS, existe um proxy reverso
+compartilhado (Traefik) em [`traefik/`](traefik/) — infra da VPS, não de
+nenhuma marca, roda uma vez e não é copiada pelo scaffold do CLI.
+
+```bash
+# Uma vez por VPS
+docker network create edge
+cp traefik/.env.example traefik/.env   # editar ACME_EMAIL
+(cd traefik && docker compose up -d)
+
+# Por marca (o CLI já preenche DOMAIN/BRAND_SLUG no .env; aponte o DNS
+# da marca — registro A — pro IP da VPS antes de subir)
+cd minha-marca
+docker compose --profile prod up -d
+```
+
+O Traefik descobre o container pela label `traefik.enable=true` (já presente
+no `docker-compose.yml` do template) e emite o certificado Let's Encrypt do
+domínio automaticamente na primeira requisição HTTPS. Detalhes em
+[`traefik/README.md`](traefik/README.md).
+
+Importante: a rede `edge` é referenciada como `external: true` no
+`docker-compose.yml` de toda instância — ela precisa existir (passo acima)
+mesmo se você não for usar o Traefik, é criada uma única vez por VPS. Acesso
+direto via `WEB_PORT` continua funcionando normalmente com ou sem o proxy.
 
 ## O que é do template vs. o que é da marca
 
@@ -93,6 +122,10 @@ afeta de fato no próximo build+deploy daquela instância, nunca antes.
 Cada instância gerada carrega um `.template-version` com a versão do
 template que a originou, para uma ferramenta de update futura saber a
 partir de onde atualizar.
+
+`traefik/` é uma terceira categoria: infra da VPS, nem brand-owned nem
+template-owned de uma instância — o CLI nem copia essa pasta pro scaffold
+(ver [Múltiplas marcas na mesma VPS](#múltiplas-marcas-na-mesma-vps)).
 
 ## Documentação
 

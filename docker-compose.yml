@@ -19,5 +19,23 @@ services:
       target: prod
     ports:
       - "${WEB_PORT:-8080}:80"
+    networks:
+      - edge
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.entrypoints=websecure"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${BRAND_SLUG:-brand}.loadbalancer.server.port=80"
     profiles:
       - prod
+
+# Rede compartilhada com o proxy reverso da VPS (ver traefik/). Precisa
+# existir ANTES do primeiro `docker compose up`:
+#   docker network create edge
+# Rodar sem Traefik (só acesso direto via WEB_PORT) continua funcionando,
+# mas essa rede externa precisa existir de qualquer forma — é criada uma
+# única vez por VPS, não por marca.
+networks:
+  edge:
+    external: true
