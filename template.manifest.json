@@ -1,0 +1,10 @@
+{
+  "$comment": "Fonte de verdade sobre o que pertence a cada marca. Tudo listado em brandOwned nunca deve ser sobrescrito por uma atualização futura do template (independente do mecanismo escolhido). Tudo que não está listado é template-owned: propaga normalmente.",
+  "brandOwned": [
+    ".env",
+    ".env.production",
+    "src/content/**",
+    "public/favicon.ico",
+    "public/favicon.svg"
+  ]
+}

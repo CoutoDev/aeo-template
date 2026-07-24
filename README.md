@@ -68,6 +68,32 @@ instância entra no build context do Docker de propósito (ver comentário em
   entrada no FAQPage JSON-LD + linha no `llms.txt`).
 - `src/content/posts/*.md` — artigos do blog (`/jornal`).
 
+## O que é do template vs. o que é da marca
+
+Uma futura atualização deste template para instâncias já em produção (via
+diff rastreado ou split em pacote npm — ainda não decidido) só deve
+sobrescrever o que é **template-owned**. O que é **brand-owned** nunca deve
+ser tocado por essa atualização; é conteúdo/config exclusivo de cada
+instância. A lista oficial (consumível por máquina) vive em
+[`template.manifest.json`](template.manifest.json).
+
+| Brand-owned (nunca sobrescrever) | Template-owned (propaga em update) |
+| --- | --- |
+| `.env`, `.env.production` | `src/components/`, `src/layouts/`, `src/pages/` |
+| `src/content/**` (conteúdo real da marca) | `src/lib/`, `src/content.config.ts`, `src/styles/global.css` |
+| `public/favicon.ico`, `public/favicon.svg` | `astro.config.mjs`, `cli/`, `scripts/`, `Dockerfile`, `nginx.conf` |
+
+Na prática: mudar cor de tema é seguro porque cor nunca vive em componente —
+vem de `THEME_*` (`.env`) → `src/lib/brand.ts` → CSS custom properties
+injetadas por `BaseLayout.astro`. `npm run check:theme` falha o processo se
+alguém hardcodar um hex fora de `brand.ts`, pra essa garantia não regredir.
+Mudar estrutura de componentes/páginas é o caso "deve afetar a marca" — e só
+afeta de fato no próximo build+deploy daquela instância, nunca antes.
+
+Cada instância gerada carrega um `.template-version` com a versão do
+template que a originou, para uma ferramenta de update futura saber a
+partir de onde atualizar.
+
 ## Documentação
 
 Este template usa [Astro](https://docs.astro.build). Consulte a documentação

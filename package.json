@@ -17,13 +17,15 @@
     "docker-compose.yml",
     "nginx.conf",
     ".dockerignore",
-    ".env.example"
+    ".env.example",
+    "template.manifest.json"
   ],
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "astro dev",
+    "check:theme": "node scripts/check-theme-leak.mjs",
     "llms-txt": "node scripts/generate-llms-txt.mjs",
     "prebuild": "npm run llms-txt",
     "build": "astro build",

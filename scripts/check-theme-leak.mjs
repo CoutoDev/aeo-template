@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+// Garante que nenhuma cor hex fique hardcoded fora de src/lib/brand.ts.
+// Cor de marca só pode existir ali (lida de THEME_* em build time) e fluir
+// como var(--token) — nunca literal em componente/CSS. Ver template.manifest.json.
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const SCAN_DIRS = ['src/components', 'src/layouts', 'src/pages', 'src/styles'];
+const SCAN_EXT = new Set(['.astro', '.css']);
+const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
+
+async function walk(dir) {
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const files = [];
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...(await walk(full)));
+    else if (SCAN_EXT.has(path.extname(entry.name))) files.push(full);
+  }
+  return files;
+}
+
+const violations = [];
+for (const dir of SCAN_DIRS) {
+  const files = await walk(path.join(ROOT, dir));
+  for (const file of files) {
+    const content = await readFile(file, 'utf-8');
+    const lines = content.split('\n');
+    lines.forEach((line, i) => {
+      const matches = line.match(HEX_COLOR);
+      if (matches) {
+        violations.push({ file: path.relative(ROOT, file), line: i + 1, matches });
+      }
+    });
+  }
+}
+
+if (violations.length > 0) {
+  console.error('Cor hex hardcoded encontrada fora de src/lib/brand.ts:\n');
+  for (const v of violations) {
+    console.error(`  ${v.file}:${v.line} — ${v.matches.join(', ')}`);
+  }
+  console.error(
+    '\nCores de marca devem vir de THEME_* (.env) via src/lib/brand.ts e ser consumidas como var(--token). Ver template.manifest.json.'
+  );
+  process.exit(1);
+}
+
+console.log('check:theme — nenhuma cor hardcoded encontrada.');

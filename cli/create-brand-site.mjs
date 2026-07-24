@@ -140,9 +140,21 @@ await writeFile(path.join(targetDir, '.env'), envContent, 'utf-8');
 
 const pkgPath = path.join(targetDir, 'package.json');
 const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
+const templateVersion = pkg.version;
 pkg.name = slugify(answers.siteName) || 'brand-site';
 delete pkg.bin;
 await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+
+// Ancora a versão do template usada na criação desta instância. Não
+// implementa update nenhum agora — só evita que uma futura ferramenta de
+// atualização (diff rastreado ou split em pacote npm) precise de outra
+// migração de formato para saber "a partir de onde" atualizar.
+const templateVersionContent = JSON.stringify(
+  { template: 'create-brand-site', version: templateVersion },
+  null,
+  2
+) + '\n';
+await writeFile(path.join(targetDir, '.template-version'), templateVersionContent, 'utf-8');
 
 console.log(`\n✓ Instância "${answers.siteName}" criada em ${targetDir}`);
 console.log(`\nPróximos passos:
