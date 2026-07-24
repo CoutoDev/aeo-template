@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AnswerBlock from '../components/AnswerBlock.astro';
 import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
 import { brand } from '../lib/brand';
 import { getRequiredPage } from '../lib/content';
 
@@ -29,6 +30,16 @@ const faqSchema = {
     {home.data.eyebrow && <p class="eyebrow">{home.data.eyebrow}</p>}
     <h1>{home.data.title}</h1>
     <div class="hero__lede"><HomeLede /></div>
+    {home.data.hero && (
+      <Image
+        class="hero__image"
+        src={home.data.hero}
+        alt={home.data.heroAlt ?? home.data.title}
+        widths={[800, 1600]}
+        sizes="(min-width: 768px) 42rem, 100vw"
+        format="webp"
+      />
+    )}
     {home.data.specs && (
       <div class="hero__specs">
         {home.data.specs.map((s) => (
@@ -55,6 +66,16 @@ const faqSchema = {
     <div class="post-grid">
       {posts.map((p) => (
         <a class="post-card" href={`/jornal/${p.id}`}>
+          {p.data.cover && (
+            <Image
+              class="post-card__thumb"
+              src={p.data.cover}
+              alt={p.data.coverAlt ?? p.data.title}
+              widths={[400, 800]}
+              sizes="(min-width: 768px) 400px, 100vw"
+              format="webp"
+            />
+          )}
           <span class="eyebrow">{p.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           <h3>{p.data.title}</h3>
           <p>{p.data.description}</p>
@@ -78,6 +99,15 @@ const faqSchema = {
     color: var(--ink-muted);
     font-size: 1.05rem;
     max-width: 36rem;
+  }
+  .hero__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 22rem;
+    object-fit: cover;
+    border-radius: var(--radius);
+    margin-top: var(--space-xl);
   }
   .hero__specs {
     display: flex;
@@ -125,6 +155,14 @@ const faqSchema = {
     border-radius: var(--radius);
     padding: var(--space-lg);
     text-decoration: none;
+  }
+  .post-card__thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border-radius: var(--radius);
+    margin-bottom: var(--space-sm);
   }
   .post-card h3 {
     color: var(--ink);

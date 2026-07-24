@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s*)",
+      "Bash(npx astro check)",
+      "Bash(npm run check:theme)"
+    ]
+  }
+}
