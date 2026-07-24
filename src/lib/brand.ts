@@ -56,37 +56,7 @@ const schema = z.object({
   THEME_ACCENT_BORDER_WIDTH: optional('3px'),
 });
 
-// Nomes de env var descontinuados (renomeados pra separar valores de modo
-// claro/escuro). Zod ignora chaves desconhecidas e cai no default — sem essa
-// checagem, um .env desatualizado perderia a cor customizada da marca em
-// silêncio em vez de falhar o build.
-const DEPRECATED_THEME_KEYS: Record<string, string> = {
-  THEME_BG: 'THEME_BG_DARK / THEME_BG_LIGHT',
-  THEME_SURFACE: 'THEME_SURFACE_DARK / THEME_SURFACE_LIGHT',
-  THEME_SURFACE_RAISED: 'THEME_SURFACE_RAISED_DARK / THEME_SURFACE_RAISED_LIGHT',
-  THEME_INK: 'THEME_INK_DARK / THEME_INK_LIGHT',
-  THEME_INK_MUTED: 'THEME_INK_MUTED_DARK / THEME_INK_MUTED_LIGHT',
-  THEME_GOLD: 'THEME_ACCENT_DARK / THEME_ACCENT_LIGHT',
-  THEME_GOLD_SOFT: 'THEME_ACCENT_SOFT_DARK / THEME_ACCENT_SOFT_LIGHT',
-  THEME_CHERRY: 'THEME_ACCENT_2_DARK / THEME_ACCENT_2_LIGHT',
-  THEME_LINE: 'THEME_LINE_DARK / THEME_LINE_LIGHT',
-};
-
-function checkDeprecatedKeys(env: Record<string, unknown>) {
-  const found = Object.keys(DEPRECATED_THEME_KEYS).filter(
-    (key) => env[key] !== undefined && env[key] !== ''
-  );
-  if (found.length === 0) return;
-  const lines = found.map((key) => `  - ${key} → ${DEPRECATED_THEME_KEYS[key]}`).join('\n');
-  throw new Error(
-    `Configuração de marca inválida. As variáveis de tema abaixo foram renomeadas ` +
-      `pra separar valores de modo claro/escuro e não têm mais efeito:\n${lines}\n` +
-      `Atualize o .env da instância pra usar os novos nomes (ver .env.example).`
-  );
-}
-
 function loadConfig() {
-  checkDeprecatedKeys(import.meta.env);
   const parsed = schema.safeParse(import.meta.env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
