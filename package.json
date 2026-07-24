@@ -38,5 +38,9 @@
     "gray-matter": "^4.0.3",
     "vite": "^8.1.5",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "typescript": "^6.0.3"
   }
 }

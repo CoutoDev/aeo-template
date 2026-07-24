@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AnswerBlock from '../components/AnswerBlock.astro';
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import { getRequiredPage } from '../lib/content';
 
 const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order);
 const rendered = await Promise.all(faqs.map((f) => render(f)));
-const page = await getEntry('pages', 'faq');
+const page = await getRequiredPage('faq');
 
 const faqSchema = {
   '@context': 'https://schema.org',

@@ -9,7 +9,7 @@ import { z } from 'zod';
 // zod .default() só entra em ação para `undefined`, não para "", este
 // preprocess trata "" como "não definido" para que o default funcione
 // mesmo se alguém esquecer as aspas.
-const optional = (fallback) =>
+const optional = (fallback: string) =>
   z.preprocess((v) => (v === '' || v === undefined ? undefined : v), z.string().default(fallback));
 
 const schema = z.object({
