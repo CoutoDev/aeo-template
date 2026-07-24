@@ -1,7 +1,24 @@
 {
-  "name": "brand-aeo-site",
+  "name": "create-brand-site",
   "type": "module",
   "version": "0.0.1",
+  "description": "Template Astro agnóstico de marca (AEO/SEO) com CLI scaffolder para gerar uma instância por marca.",
+  "bin": {
+    "create-brand-site": "./cli/create-brand-site.mjs"
+  },
+  "files": [
+    "cli",
+    "src",
+    "public",
+    "scripts",
+    "astro.config.mjs",
+    "tsconfig.json",
+    "Dockerfile",
+    "docker-compose.yml",
+    "nginx.conf",
+    ".dockerignore",
+    ".env.example"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },
@@ -16,6 +33,8 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.1.3",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "vite": "^8.1.5",
+    "zod": "^4.4.3"
   }
 }

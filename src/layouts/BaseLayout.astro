@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
+import { brand, theme } from '../lib/brand';
 import '../styles/global.css';
 
 interface Props {
@@ -18,24 +19,26 @@ const { title, description, jsonLd, publishDate, updatedDate, author } = Astro.p
 const ORG = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Torra Alta',
+  name: brand.name,
   url: Astro.site?.toString(),
-  description:
-    'Torrefação de café especial em Campinas (SP), com compra direta de produtores e torra em lotes pequenos.',
-  areaServed: 'BR',
+  description: brand.description,
+  ...(brand.areaServed ? { areaServed: brand.areaServed } : {}),
 };
 
 const pageSchemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const themeVars = `:root{--bg:${theme.bg};--surface:${theme.surface};--surface-raised:${theme.surfaceRaised};--ink:${theme.ink};--ink-muted:${theme.inkMuted};--gold:${theme.gold};--gold-soft:${theme.goldSoft};--cherry:${theme.cherry};--line:${theme.line}}`;
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<html lang={brand.locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title} · Torra Alta</title>
+    <title>{title} · {brand.name}</title>
     <meta name="description" content={description} />
+    <style set:html={themeVars} />
     <link rel="canonical" href={canonicalURL} />
 
     <!-- Open Graph -->

@@ -24,9 +24,23 @@ const posts = defineCollection({
     description: z.string(),
     publishDate: z.date(),
     updatedDate: z.date().optional(),
-    author: z.string().default('Equipe Torra Alta'),
+    author: z.string().default('Equipe Editorial'),
     tags: z.array(z.string()).default([]),
   }),
 });
 
-export const collections = { faq, posts };
+// Conteudo estrutural das paginas fixas (home, sobre, index de faq/jornal).
+// O corpo Markdown vira a prosa (lede do hero, paragrafos da pagina "sobre");
+// o frontmatter cobre os campos curtos (titulo, meta description, specs).
+const pages = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/pages' }),
+  schema: z.object({
+    eyebrow: z.string().optional(),
+    title: z.string(),
+    heading: z.string().optional(),
+    metaDescription: z.string(),
+    specs: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+  }),
+});
+
+export const collections = { faq, posts, pages };

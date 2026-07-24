@@ -6,8 +6,23 @@ import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 
+// Roda como processo Node isolado (fora do Vite), então precisa carregar o
+// .env explicitamente. Em Docker/produção as vars já vêm do ambiente real,
+// então a ausência de um arquivo .env é esperada e ignorada.
+try {
+  process.loadEnvFile();
+} catch {
+  // sem .env local — assume que as vars já estão no ambiente
+}
+
 const ROOT = new URL('..', import.meta.url).pathname;
-const SITE_URL = 'https://torraalta.example.com';
+const { SITE_NAME, SITE_URL, SITE_DESCRIPTION } = process.env;
+
+for (const [key, value] of Object.entries({ SITE_NAME, SITE_URL, SITE_DESCRIPTION })) {
+  if (!value) {
+    throw new Error(`${key} não definida — configure o .env da instância (ver .env.example).`);
+  }
+}
 
 async function readCollection(name) {
   const dir = path.join(ROOT, 'src/content', name);
@@ -29,13 +44,9 @@ const posts = (await readCollection('posts')).sort(
 );
 
 const lines = [];
-lines.push('# Torra Alta');
+lines.push(`# ${SITE_NAME}`);
 lines.push('');
-lines.push(
-  '> Torrefação de café especial em Campinas (SP). Compra direta de oito fazendas ' +
-    'parceiras no Sul de Minas e Cerrado Mineiro, torra em lotes pequenos, venda para ' +
-    'consumidores finais e cafeterias em todo o Brasil.'
-);
+lines.push(`> ${SITE_DESCRIPTION}`);
 lines.push('');
 
 lines.push('## Perguntas frequentes');

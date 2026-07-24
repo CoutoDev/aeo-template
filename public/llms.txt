@@ -1,35 +1,43 @@
-# Torra Alta
+# Nome da Marca
 
-> Torrefação de café especial em Campinas (SP). Compra direta de oito fazendas parceiras no Sul de Minas e Cerrado Mineiro, torra em lotes pequenos, venda para consumidores finais e cafeterias em todo o Brasil.
+> Descrição de 1-2 frases usada como meta description e resumo padrão da marca.
 
 ## Perguntas frequentes
 
-### O que é a Torra Alta?
-A Torra Alta é uma torrefação de café especial sediada em Campinas (SP) que compra direto de produtores, torra em lotes pequenos e vende para cafeterias e consumidores finais em todo o Brasil.
-Fonte: https://torraalta.example.com/perguntas-frequentes#o-que-e-torra-alta
+### Pergunta frequente de exemplo número 1?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-1
 
-### Qual a diferença entre café especial e café comum?
-Café especial é aquele avaliado acima de 80 pontos na escala da SCA (Specialty Coffee Association), com defeitos zero na amostra e características sensoriais distintas de origem, processamento e torra — diferente do café comercial, avaliado por volume e uniformidade.
-Fonte: https://torraalta.example.com/perguntas-frequentes#qual-a-diferenca-cafe-especial
+### Pergunta frequente de exemplo número 2?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#pergunta-exemplo-2
 
-### Como armazenar café em grãos para manter o frescor?
-Guarde o café em recipiente opaco e hermético, longe de luz, calor e umidade, e consuma em até 4 a 6 semanas após a torra — o congelador só vale a pena para estoques acima de um mês.
-Fonte: https://torraalta.example.com/perguntas-frequentes#como-armazenar-cafe
+### Pergunta frequente de exemplo número 3?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#como-armazenar-cafe
 
-### Qual método de preparo combina com cada torra da Torra Alta?
-Torras claras (origem única) rendem melhor em métodos filtrados como V60 e Kalita; torras médias funcionam bem em prensa francesa e moka; nossa torra escura é a recomendada para espresso e para quem usa cafeteira italiana no dia a dia.
-Fonte: https://torraalta.example.com/perguntas-frequentes#qual-metodo-preparo-escolher
+### Pergunta frequente de exemplo número 4?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#o-que-e-torra-alta
 
-### A Torra Alta atende cafeterias e faz entrega recorrente?
-Sim — atendemos cafeterias e negócios de food service em todo o Brasil com contrato de fornecimento recorrente, curva de torra personalizada por cliente e suporte de barista incluído a partir de 20kg/mês.
-Fonte: https://torraalta.example.com/perguntas-frequentes#fazem-entrega-para-cafeterias
+### Pergunta frequente de exemplo número 5?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#qual-a-diferenca-cafe-especial
+
+### Pergunta frequente de exemplo número 6?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#qual-metodo-preparo-escolher
+
+### Pergunta frequente de exemplo número 7?
+Resposta curta e autocontida (1-3 frases), pensada para ser extraída por agentes/LLMs sem precisar do resto da página.
+Fonte: https://minhamarca.example.com/perguntas-frequentes#fazem-entrega-para-cafeterias
 
 ## Jornal (artigos)
 
-### Como ler o rótulo de um café especial (e o que ele revela sobre a xícara)
-O que significam altitude, processo, variedade e pontuação SCA no rótulo de um pacote de café especial, e por que essas informações prevêem o sabor antes de você abrir o pacote.
-Fonte: https://torraalta.example.com/jornal/como-ler-rotulo-cafe-especial
+### Título de artigo de exemplo número 1
+Descrição de 1-2 frases resumindo o artigo, usada como meta description e nos cards de listagem.
+Fonte: https://minhamarca.example.com/jornal/como-ler-rotulo-cafe-especial
 
-### Torra clara ou torra escura: qual escolher?
-Comparativo direto entre torra clara e torra escura — acidez, corpo, cafeína percebida e para qual método de preparo cada uma funciona melhor.
-Fonte: https://torraalta.example.com/jornal/guia-torra-clara-vs-escura
+### Título de artigo de exemplo número 2
+Descrição de 1-2 frases resumindo o artigo, usada como meta description e nos cards de listagem.
+Fonte: https://minhamarca.example.com/jornal/guia-torra-clara-vs-escura

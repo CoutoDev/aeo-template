@@ -1,25 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getEntry, render } from 'astro:content';
+
+const about = await getEntry('pages', 'about');
+const { Content } = await render(about);
 ---
 
-<BaseLayout
-  title="Sobre a Torra Alta"
-  description="Torrefação de café especial fundada em 2019 em Campinas (SP), com compra direta de oito fazendas parceiras no Sul de Minas e Cerrado Mineiro."
->
+<BaseLayout title={about.data.title} description={about.data.metaDescription}>
   <section class="section">
-    <p class="eyebrow">Sobre</p>
-    <h1 class="section__title">De Campinas para o Brasil, direto do produtor</h1>
+    {about.data.eyebrow && <p class="eyebrow">{about.data.eyebrow}</p>}
+    <h1 class="section__title">{about.data.heading ?? about.data.title}</h1>
     <div class="prose">
-      <p>
-        A Torra Alta é uma torrefação de café especial sediada em Campinas (SP), fundada em 2019.
-        Trabalhamos com oito fazendas parceiras no Sul de Minas e no Cerrado Mineiro, com contrato
-        direto e rastreabilidade completa de lote — do talhão até o pacote.
-      </p>
-      <p>
-        Torramos em lotes de até 25kg, o que permite ajustar a curva de torra para cada origem
-        em vez de aplicar um perfil genérico para todo o catálogo. Vendemos para consumidores
-        finais e para cafeterias e negócios de food service em todo o Brasil.
-      </p>
+      <Content />
     </div>
   </section>
 </BaseLayout>

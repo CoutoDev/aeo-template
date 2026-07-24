@@ -1,23 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
+import { brand } from '../../lib/brand';
 
 const posts = (await getCollection('posts')).sort(
   (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
 );
+const page = await getEntry('pages', 'jornal');
 ---
 
-<BaseLayout
-  title="Jornal da torra"
-  description="Guias sobre origem, processo, torra e método de preparo, escritos pela equipe da Torra Alta."
->
+<BaseLayout title={page.data.title} description={page.data.metaDescription}>
   <section class="section">
-    <p class="eyebrow">Jornal da torra</p>
-    <h1 class="section__title">Guias sobre origem, torra e preparo</h1>
+    <p class="eyebrow">{page.data.title}</p>
+    <h1 class="section__title">{page.data.heading ?? page.data.title}</h1>
     <div class="post-list">
       {posts.map((p) => (
         <a class="post-row" href={`/jornal/${p.id}`}>
-          <span class="eyebrow">{p.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          <span class="eyebrow">{p.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           <h2>{p.data.title}</h2>
           <p>{p.data.description}</p>
         </a>

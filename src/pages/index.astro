@@ -1,12 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AnswerBlock from '../components/AnswerBlock.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
+import { brand } from '../lib/brand';
 
 const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order).slice(0, 3);
 const posts = (await getCollection('posts')).sort(
   (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
 );
+
+const home = await getEntry('pages', 'home');
+const { Content: HomeLede } = await render(home);
 
 const faqSchema = {
   '@context': 'https://schema.org',
@@ -19,24 +23,18 @@ const faqSchema = {
 };
 ---
 
-<BaseLayout
-  title="Café especial de origem única, torrado em Campinas"
-  description="Torra Alta compra direto de produtores no Sul de Minas e Cerrado Mineiro e torra em lotes pequenos para cafeterias e consumidores em todo o Brasil."
-  jsonLd={faqSchema}
->
+<BaseLayout title={home.data.title} description={home.data.metaDescription} jsonLd={faqSchema}>
   <section class="hero">
-    <p class="eyebrow">Torrefação de café especial · Campinas, SP</p>
-    <h1>Do produtor à xícara,<br />sem atravessador e sem torra genérica.</h1>
-    <p class="hero__lede">
-      Compramos direto de oito fazendas parceiras no Sul de Minas e no Cerrado Mineiro,
-      e torramos em lotes de até 25kg — pequenos o bastante para ajustar a curva de torra
-      a cada origem, em vez de aplicar a mesma curva para todo o catálogo.
-    </p>
-    <div class="hero__specs">
-      <div><span class="eyebrow">Origem</span><strong>Sul de Minas · Cerrado Mineiro</strong></div>
-      <div><span class="eyebrow">Lote</span><strong>Até 25kg</strong></div>
-      <div><span class="eyebrow">Entrega</span><strong>Todo o Brasil</strong></div>
-    </div>
+    {home.data.eyebrow && <p class="eyebrow">{home.data.eyebrow}</p>}
+    <h1>{home.data.title}</h1>
+    <div class="hero__lede"><HomeLede /></div>
+    {home.data.specs && (
+      <div class="hero__specs">
+        {home.data.specs.map((s) => (
+          <div><span class="eyebrow">{s.label}</span><strong>{s.value}</strong></div>
+        ))}
+      </div>
+    )}
   </section>
 
   <section class="section">
@@ -56,7 +54,7 @@ const faqSchema = {
     <div class="post-grid">
       {posts.map((p) => (
         <a class="post-card" href={`/jornal/${p.id}`}>
-          <span class="eyebrow">{p.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          <span class="eyebrow">{p.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
           <h3>{p.data.title}</h3>
           <p>{p.data.description}</p>
         </a>

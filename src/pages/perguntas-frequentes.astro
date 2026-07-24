@@ -1,10 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AnswerBlock from '../components/AnswerBlock.astro';
-import { getCollection, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 
 const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order);
 const rendered = await Promise.all(faqs.map((f) => render(f)));
+const page = await getEntry('pages', 'faq');
 
 const faqSchema = {
   '@context': 'https://schema.org',
@@ -17,14 +18,10 @@ const faqSchema = {
 };
 ---
 
-<BaseLayout
-  title="Perguntas frequentes"
-  description="Respostas diretas sobre café especial, torra, armazenamento e método de preparo, com aprofundamento logo abaixo de cada resposta."
-  jsonLd={faqSchema}
->
+<BaseLayout title={page.data.title} description={page.data.metaDescription} jsonLd={faqSchema}>
   <section class="section">
-    <p class="eyebrow">Perguntas frequentes</p>
-    <h1 class="section__title">Respostas diretas, uma por vez</h1>
+    <p class="eyebrow">{page.data.title}</p>
+    <h1 class="section__title">{page.data.heading ?? page.data.title}</h1>
     <div class="answer-list">
       {faqs.map((f, i) => {
         const { Content } = rendered[i];

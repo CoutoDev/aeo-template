@@ -1,0 +1,13 @@
+node_modules
+dist
+.astro
+.git
+.vscode
+npm-debug.log*
+.DS_Store
+
+# .env NAO esta na lista de exclusao de proposito: o site e 100% estatico,
+# entao a identidade da marca (SITE_NAME, cores etc.) precisa estar
+# disponivel em build time dentro do container. .env so contem dados
+# publicos de marca, sem segredos (ver .env.example). A imagem final de
+# producao (stage "prod", nginx) nunca copia .env — so o HTML gerado.

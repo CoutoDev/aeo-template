@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection, render } from 'astro:content';
+import { brand } from '../../lib/brand';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
@@ -34,7 +35,7 @@ const articleSchema = {
 >
   <article class="post section">
     <p class="eyebrow">
-      {post.data.publishDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+      {post.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'long', year: 'numeric' })}
       · {post.data.author}
     </p>
     <h1 class="post__title">{post.data.title}</h1>

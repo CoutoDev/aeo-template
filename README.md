@@ -1,43 +1,74 @@
-# Astro Starter Kit: Minimal
+# create-brand-site
 
-```sh
-npm create astro@latest -- --template minimal
+Template Astro agnóstico de marca, com foco em AEO/SEO (JSON-LD, `llms.txt`,
+respostas diretas extraíveis por agentes/LLMs). Identidade de cada marca
+(nome, domínio, descrição, cores) vem de variáveis de ambiente; conteúdo
+longo (hero, "sobre", FAQ, posts) vive como Markdown em `src/content/`.
+
+Cada marca vira sua própria **instância**: uma pasta independente, com seu
+próprio `.env`, conteúdo e deploy Docker — gerada via CLI a partir deste
+pacote.
+
+## Criar uma instância de marca
+
+```bash
+npx create-brand-site minha-marca --site-name "Minha Marca" --site-url "https://minhamarca.com.br" --description "O que a marca faz, em 1-2 frases."
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Flags omitidas são pedidas interativamente. Veja todas com:
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```bash
+npx create-brand-site --help
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Isso cria `./minha-marca/` com uma cópia deste template + um `.env` já
+preenchido. Depois:
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```bash
+cd minha-marca
+npm install
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+Edite o conteúdo de exemplo (`src/content/pages/*.md`, `src/content/faq/*.md`,
+`src/content/posts/*.md`) com o conteúdo real da marca, e troque
+`public/favicon.svg` / `public/favicon.ico`.
 
-## 🧞 Commands
+## Rodar uma instância
 
-All commands are run from the root of the project, from a terminal:
+| Comando | Ação |
+| --- | --- |
+| `npm run dev` | Servidor de dev local em `localhost:4321` |
+| `npm run build` | Build estático em `./dist/` |
+| `npm run preview` | Preview do build local |
+| `docker compose --profile dev up` | Dev com hot-reload em container |
+| `docker compose --profile prod up -d` | Build + serve estático via Nginx |
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Rodando várias marcas ao mesmo tempo no mesmo host: cada instância tem seu
+próprio `DEV_PORT`/`WEB_PORT` no `.env` (ver `.env.example`), então basta
+`docker compose --profile prod up -d` em cada pasta de instância sem
+colisão de porta.
 
-## 👀 Want to learn more?
+## Variáveis de ambiente
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Ver [`.env.example`](.env.example) para a lista completa e defaults.
+Obrigatórias: `SITE_NAME`, `SITE_URL`, `SITE_DESCRIPTION`. O resto
+(localização, locale, paleta de cores, portas Docker) tem default ou é
+opcional.
+
+Como o site é 100% estático, essas variáveis precisam existir em **build
+time** (`npm run build` / `docker build`), não só em runtime — o `.env` da
+instância entra no build context do Docker de propósito (ver comentário em
+`.dockerignore`).
+
+## Estrutura de conteúdo
+
+- `src/content/pages/{home,about,faq,jornal}.md` — título, meta description e
+  corpo (Markdown) das 4 páginas fixas.
+- `src/content/faq/*.md` — cada arquivo é uma pergunta (vira bloco visual +
+  entrada no FAQPage JSON-LD + linha no `llms.txt`).
+- `src/content/posts/*.md` — artigos do blog (`/jornal`).
+
+## Documentação
+
+Este template usa [Astro](https://docs.astro.build). Consulte a documentação
+para rotas, componentes, content collections e i18n.

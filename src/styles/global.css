@@ -1,18 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Os custom properties de cor (--bg, --surface, --ink, --gold etc.) são
+   injetados em tempo de build por BaseLayout.astro a partir de THEME_*
+   (ver src/lib/brand.ts) — não ficam fixos aqui. */
 :root {
-  /* Paleta: espresso escuro + dourado de torra, inspirada em sacas
-     e rótulos de café especial — não é a dupla cream/terracota padrão. */
-  --bg: #1c1512;
-  --surface: #251c17;
-  --surface-raised: #2f231d;
-  --ink: #ede6dd;
-  --ink-muted: #b3a294;
-  --gold: #c9a54a;
-  --gold-soft: #e4c877;
-  --cherry: #8b3a2e;
-  --line: #3c2f27;
-
   --font-display: 'Fraunces', Georgia, serif;
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;

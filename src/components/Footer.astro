@@ -1,8 +1,9 @@
 ---
+import { brand } from '../lib/brand';
 ---
 <footer class="site-footer">
   <div class="wrap site-footer__row">
-    <p>© {new Date().getFullYear()} Torra Alta · Campinas, SP</p>
+    <p>© {new Date().getFullYear()} {brand.name}{brand.location && ` · ${brand.location}`}</p>
     <div class="site-footer__links">
       <a href="/llms.txt">llms.txt</a>
       <a href="/sitemap-index.xml">sitemap</a>

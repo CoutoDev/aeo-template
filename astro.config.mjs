@@ -1,9 +1,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { loadEnv } from 'vite';
 import sitemap from '@astrojs/sitemap';
 
-// Troque pelo dominio real de cada marca ao clonar este template.
-const SITE_URL = 'https://torraalta.example.com';
+// SITE_URL vem do .env de cada instância (ver .env.example).
+const { SITE_URL } = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), '');
 
 export default defineConfig({
   site: SITE_URL,
