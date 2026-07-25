@@ -39,8 +39,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <script is:inline>
       (function () {
         try {
-          var root = document.documentElement;
-          var stored = localStorage.getItem('theme');
+          const root = document.documentElement;
+          const stored = localStorage.getItem('theme');
           if (stored === 'dark' || stored === 'light') {
             root.dataset.theme = stored;
           } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
