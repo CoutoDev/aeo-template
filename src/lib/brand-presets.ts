@@ -1,17 +1,28 @@
-// Presets de marca do "Design System (Standalone).html" — só pra comparação
-// visual em dev (ver src/components/BrandPresetSwitcher.astro). Não é config
-// de marca real: a marca desta instância continua vindo só de THEME_* (.env)
-// via src/lib/brand.ts. fontBody/fontMono não entram aqui porque os 3
-// presets usam os mesmos (Inter / JetBrains Mono, já carregados por padrão).
+// Presets de marca do "Design System (Standalone).html". O primeiro da lista é
+// o tema padrão do template: é ele que o site usa quando o .env da instância
+// não define nenhum THEME_* (ver src/lib/brand.ts). Os outros existem para
+// comparação visual em dev (ver src/components/BrandPresetSwitcher.astro).
+// fontBody/fontMono não entram aqui porque todos os presets usam as mesmas
+// (Inter / JetBrains Mono) — só a display muda.
 
 import type { ThemeModeVars } from './theme-css';
+
+// Cada preset carrega o import completo das suas famílias (a display + as
+// compartilhadas): qualquer um pode ser o padrão da instância, e em dev o
+// switcher aplica um preset por cima do import que já veio no <head>.
+const SHARED_FONT_FAMILIES = 'family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500';
+const FRAUNCES = 'Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600';
+const SPACE_GROTESK = 'Space+Grotesk:wght@400;500;600';
+
+const googleFontsUrl = (displayFamily: string) =>
+  `https://fonts.googleapis.com/css2?family=${displayFamily}&${SHARED_FONT_FAMILIES}&display=swap`;
 
 export interface BrandPreset {
   key: string;
   name: string;
   tagline: string;
   fontDisplay: string;
-  fontImportUrl?: string;
+  fontImportUrl: string;
   radius: string;
   accentBorderWidth: string;
   spaceRatio: number;
@@ -19,25 +30,26 @@ export interface BrandPreset {
   light: ThemeModeVars;
 }
 
-export const BRAND_PRESETS: BrandPreset[] = [
+// Tipo de lista não-vazia: brand.ts depende de BRAND_PRESETS[0] existir.
+export const BRAND_PRESETS: [BrandPreset, ...BrandPreset[]] = [
   {
     key: 'nordwell',
     name: 'Nordwell',
     tagline: 'Cool, precise, engineering-grade.',
     fontDisplay: "'Space Grotesk', system-ui, sans-serif",
-    fontImportUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap',
+    fontImportUrl: googleFontsUrl(SPACE_GROTESK),
     radius: '6px',
     accentBorderWidth: '3px',
     spaceRatio: 1.5,
     dark: {
-      bg: 'oklch(0.17 0.014 240)', surface: 'oklch(0.22 0.016 240)', surfaceRaised: 'oklch(0.27 0.018 240)',
-      ink: 'oklch(0.96 0.006 240)', inkMuted: 'oklch(0.68 0.02 240)', line: 'oklch(0.34 0.02 240)',
-      accent: 'oklch(0.72 0.15 235)', accentSoft: 'oklch(0.82 0.11 235)', accent2: 'oklch(0.75 0.13 190)',
+      bg: '#1a2332', surface: '#232e3d', surfaceRaised: '#2c3a47',
+      ink: '#f5f7fa', inkMuted: '#a8b3c1', line: '#485563',
+      accent: '#5eb3ff', accentSoft: '#d1e7ff', accent2: '#64b5f6',
     },
     light: {
-      bg: 'oklch(0.985 0.004 240)', surface: 'oklch(0.95 0.008 240)', surfaceRaised: 'oklch(0.91 0.01 240)',
-      ink: 'oklch(0.22 0.02 240)', inkMuted: 'oklch(0.46 0.02 240)', line: 'oklch(0.85 0.012 240)',
-      accent: 'oklch(0.52 0.16 235)', accentSoft: 'oklch(0.62 0.14 235)', accent2: 'oklch(0.55 0.14 190)',
+      bg: '#fafbfc', surface: '#f2f5f8', surfaceRaised: '#e9ecf1',
+      ink: '#38464f', inkMuted: '#758699', line: '#d9dfe6',
+      accent: '#0969da', accentSoft: '#54aeff', accent2: '#0973c3',
     },
   },
   {
@@ -45,18 +57,19 @@ export const BRAND_PRESETS: BrandPreset[] = [
     name: 'Ember & Oak',
     tagline: 'Warm, crafted, artisanal.',
     fontDisplay: "'Fraunces', Georgia, serif",
+    fontImportUrl: googleFontsUrl(FRAUNCES),
     radius: '2px',
     accentBorderWidth: '4px',
     spaceRatio: 1.5,
     dark: {
-      bg: 'oklch(0.19 0.018 45)', surface: 'oklch(0.24 0.02 45)', surfaceRaised: 'oklch(0.29 0.022 45)',
-      ink: 'oklch(0.95 0.012 60)', inkMuted: 'oklch(0.68 0.03 50)', line: 'oklch(0.35 0.025 45)',
-      accent: 'oklch(0.72 0.14 75)', accentSoft: 'oklch(0.82 0.11 80)', accent2: 'oklch(0.55 0.16 30)',
+      bg: '#2a1810', surface: '#342015', surfaceRaised: '#3e2a1a',
+      ink: '#f3f0ed', inkMuted: '#a88a6f', line: '#4a3428',
+      accent: '#d4a574', accentSoft: '#e8c9a8', accent2: '#9d5a2f',
     },
     light: {
-      bg: 'oklch(0.98 0.008 60)', surface: 'oklch(0.94 0.014 55)', surfaceRaised: 'oklch(0.9 0.018 55)',
-      ink: 'oklch(0.24 0.02 40)', inkMuted: 'oklch(0.48 0.025 45)', line: 'oklch(0.84 0.018 50)',
-      accent: 'oklch(0.56 0.15 55)', accentSoft: 'oklch(0.66 0.13 60)', accent2: 'oklch(0.5 0.16 30)',
+      bg: '#faf8f6', surface: '#f0ede8', surfaceRaised: '#e7e1da',
+      ink: '#3d2817', inkMuted: '#8b6f57', line: '#d9cec2',
+      accent: '#b86f2d', accentSoft: '#d99857', accent2: '#934a1c',
     },
   },
   {
@@ -64,18 +77,19 @@ export const BRAND_PRESETS: BrandPreset[] = [
     name: 'Verdant Supply',
     tagline: 'Grounded, sustainable, direct.',
     fontDisplay: "'Fraunces', Georgia, serif",
+    fontImportUrl: googleFontsUrl(FRAUNCES),
     radius: '16px',
     accentBorderWidth: '3px',
     spaceRatio: 1.45,
     dark: {
-      bg: 'oklch(0.18 0.015 140)', surface: 'oklch(0.23 0.018 140)', surfaceRaised: 'oklch(0.28 0.02 140)',
-      ink: 'oklch(0.95 0.01 120)', inkMuted: 'oklch(0.67 0.025 130)', line: 'oklch(0.34 0.022 140)',
-      accent: 'oklch(0.68 0.14 145)', accentSoft: 'oklch(0.78 0.12 145)', accent2: 'oklch(0.7 0.1 95)',
+      bg: '#1a2e1f', surface: '#1f3825', surfaceRaised: '#25422a',
+      ink: '#f3f7f5', inkMuted: '#7fa88a', line: '#2e4a37',
+      accent: '#4eae5e', accentSoft: '#8ed0a1', accent2: '#6cb566',
     },
     light: {
-      bg: 'oklch(0.98 0.006 120)', surface: 'oklch(0.94 0.012 120)', surfaceRaised: 'oklch(0.9 0.016 120)',
-      ink: 'oklch(0.23 0.018 130)', inkMuted: 'oklch(0.47 0.02 130)', line: 'oklch(0.84 0.014 125)',
-      accent: 'oklch(0.5 0.14 145)', accentSoft: 'oklch(0.6 0.13 145)', accent2: 'oklch(0.55 0.11 95)',
+      bg: '#faf9f8', surface: '#f0f3f1', surfaceRaised: '#e8eceb',
+      ink: '#1d3a24', inkMuted: '#5f7d68', line: '#d7ddd9',
+      accent: '#2d8659', accentSoft: '#5ba876', accent2: '#4a8c5f',
     },
   },
 ];

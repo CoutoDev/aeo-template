@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { modeVars, type ThemeModeVars } from './theme-css';
 import { SITE_URL_INVALID_MESSAGE } from './site-url';
+import { BRAND_PRESETS } from './brand-presets';
 
 // Config de identidade/tema da marca, lida de env vars em build time.
 // Textos longos (hero, sobre, FAQ, posts) NÃO vivem aqui — ficam como
@@ -16,6 +17,11 @@ const blankAsMissing = (value: unknown) => (value === '' ? undefined : value);
 const optionalText = (fallback: string) =>
   z.preprocess(blankAsMissing, z.string().default(fallback));
 
+// Tema padrão do template: o primeiro preset do design system. Uma instância
+// sem nenhum THEME_* no .env sai com a cara dele; cada variável definida
+// sobrescreve o token correspondente.
+const DEFAULT_PRESET = BRAND_PRESETS[0];
+
 const envSchema = z.object({
   // Identidade
   SITE_NAME: z.string().min(1, 'SITE_NAME é obrigatório'),
@@ -29,39 +35,38 @@ const envSchema = z.object({
   THEME_DEFAULT_MODE: z.preprocess(blankAsMissing, z.enum(['dark', 'light']).default('dark')),
 
   // Tema — cores, um par DARK/LIGHT por token (ver ThemeModeVars)
-  THEME_BG_DARK: optionalText('#1c1512'),
-  THEME_BG_LIGHT: optionalText('#faf6f0'),
-  THEME_SURFACE_DARK: optionalText('#251c17'),
-  THEME_SURFACE_LIGHT: optionalText('#f2ebe1'),
-  THEME_SURFACE_RAISED_DARK: optionalText('#2f231d'),
-  THEME_SURFACE_RAISED_LIGHT: optionalText('#e9ddcd'),
-  THEME_INK_DARK: optionalText('#ede6dd'),
-  THEME_INK_LIGHT: optionalText('#2a211b'),
-  THEME_INK_MUTED_DARK: optionalText('#b3a294'),
-  THEME_INK_MUTED_LIGHT: optionalText('#6b5d4f'),
-  THEME_ACCENT_DARK: optionalText('#c9a54a'),
-  THEME_ACCENT_LIGHT: optionalText('#806519'),
-  THEME_ACCENT_SOFT_DARK: optionalText('#e4c877'),
-  THEME_ACCENT_SOFT_LIGHT: optionalText('#886c1b'),
-  THEME_ACCENT_2_DARK: optionalText('#cc7366'),
-  THEME_ACCENT_2_LIGHT: optionalText('#8b3a2e'),
-  THEME_LINE_DARK: optionalText('#3c2f27'),
-  THEME_LINE_LIGHT: optionalText('#ddd0bd'),
+  THEME_BG_DARK: optionalText(DEFAULT_PRESET.dark.bg),
+  THEME_BG_LIGHT: optionalText(DEFAULT_PRESET.light.bg),
+  THEME_SURFACE_DARK: optionalText(DEFAULT_PRESET.dark.surface),
+  THEME_SURFACE_LIGHT: optionalText(DEFAULT_PRESET.light.surface),
+  THEME_SURFACE_RAISED_DARK: optionalText(DEFAULT_PRESET.dark.surfaceRaised),
+  THEME_SURFACE_RAISED_LIGHT: optionalText(DEFAULT_PRESET.light.surfaceRaised),
+  THEME_INK_DARK: optionalText(DEFAULT_PRESET.dark.ink),
+  THEME_INK_LIGHT: optionalText(DEFAULT_PRESET.light.ink),
+  THEME_INK_MUTED_DARK: optionalText(DEFAULT_PRESET.dark.inkMuted),
+  THEME_INK_MUTED_LIGHT: optionalText(DEFAULT_PRESET.light.inkMuted),
+  THEME_ACCENT_DARK: optionalText(DEFAULT_PRESET.dark.accent),
+  THEME_ACCENT_LIGHT: optionalText(DEFAULT_PRESET.light.accent),
+  THEME_ACCENT_SOFT_DARK: optionalText(DEFAULT_PRESET.dark.accentSoft),
+  THEME_ACCENT_SOFT_LIGHT: optionalText(DEFAULT_PRESET.light.accentSoft),
+  THEME_ACCENT_2_DARK: optionalText(DEFAULT_PRESET.dark.accent2),
+  THEME_ACCENT_2_LIGHT: optionalText(DEFAULT_PRESET.light.accent2),
+  THEME_LINE_DARK: optionalText(DEFAULT_PRESET.dark.line),
+  THEME_LINE_LIGHT: optionalText(DEFAULT_PRESET.light.line),
 
-  // Tema — tipografia
-  THEME_FONT_DISPLAY: optionalText("'Fraunces', Georgia, serif"),
+  // Tema — tipografia. Corpo e mono são do template (todos os presets usam as
+  // mesmas), só a display vem do preset.
+  THEME_FONT_DISPLAY: optionalText(DEFAULT_PRESET.fontDisplay),
   THEME_FONT_BODY: optionalText("'Inter', system-ui, sans-serif"),
   THEME_FONT_MONO: optionalText("'JetBrains Mono', ui-monospace, monospace"),
-  THEME_FONT_IMPORT_URL: optionalText(
-    'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap'
-  ),
+  THEME_FONT_IMPORT_URL: optionalText(DEFAULT_PRESET.fontImportUrl),
   THEME_TYPE_SCALE: optionalText('1'),
 
   // Tema — espaçamento e formas
   THEME_SPACE_UNIT: optionalText('1rem'),
-  THEME_SPACE_RATIO: optionalText('1.5'),
-  THEME_RADIUS: optionalText('2px'),
-  THEME_ACCENT_BORDER_WIDTH: optionalText('3px'),
+  THEME_SPACE_RATIO: optionalText(String(DEFAULT_PRESET.spaceRatio)),
+  THEME_RADIUS: optionalText(DEFAULT_PRESET.radius),
+  THEME_ACCENT_BORDER_WIDTH: optionalText(DEFAULT_PRESET.accentBorderWidth),
 });
 
 type BrandEnv = z.infer<typeof envSchema>;

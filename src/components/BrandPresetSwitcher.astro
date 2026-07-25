@@ -63,8 +63,10 @@ import { brand } from '../lib/brand';
     } catch {}
   };
 
-  function ensureFontLoaded(url?: string) {
-    if (!url || document.querySelector(`link[href="${url}"]`)) return;
+  // O preset padrão já vem no <link> do <head>, então essa mesma URL não é
+  // carregada duas vezes.
+  function ensureFontLoaded(url: string) {
+    if (document.querySelector(`link[href="${url}"]`)) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = url;

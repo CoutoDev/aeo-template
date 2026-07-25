@@ -53,7 +53,9 @@ marca precisa do próprio domínio (não só porta), ver
 Ver [`.env.example`](.env.example) para a lista completa e defaults.
 Obrigatórias: `SITE_NAME`, `SITE_URL`, `SITE_DESCRIPTION`. O resto
 (localização, locale, paleta de cores, portas Docker) tem default ou é
-opcional.
+opcional. Sem nenhuma `THEME_*`, o site sai com o tema padrão do template:
+o primeiro preset de [`src/lib/brand-presets.ts`](src/lib/brand-presets.ts).
+Cada `THEME_*` definida sobrescreve só aquele token.
 
 Como o site é 100% estático, essas variáveis precisam existir em **build
 time** (`npm run build` / `docker build`), não só em runtime — o `.env` da
@@ -113,9 +115,10 @@ instância. A lista oficial (consumível por máquina) vive em
 | `public/favicon.ico`, `public/favicon.svg` | `astro.config.mjs`, `cli/`, `scripts/`, `Dockerfile`, `nginx.conf` |
 
 Na prática: mudar cor de tema é seguro porque cor nunca vive em componente —
-vem de `THEME_*` (`.env`) → `src/lib/brand.ts` → CSS custom properties
-injetadas por `BaseLayout.astro`. `npm run check:theme` falha o processo se
-alguém hardcodar um hex fora de `brand.ts`, pra essa garantia não regredir.
+vem de `THEME_*` (`.env`), ou do preset padrão quando a variável não existe,
+→ `src/lib/brand.ts` → CSS custom properties injetadas por `BaseLayout.astro`.
+`npm run check:theme` falha o processo se alguém hardcodar um hex fora de
+`src/lib/`, pra essa garantia não regredir.
 Mudar estrutura de componentes/páginas é o caso "deve afetar a marca" — e só
 afeta de fato no próximo build+deploy daquela instância, nunca antes.
 

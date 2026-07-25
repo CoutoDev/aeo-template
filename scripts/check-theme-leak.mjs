@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Garante que nenhuma cor hex fique hardcoded fora de src/lib/. Cor de marca
-// só pode existir em src/lib/brand.ts (lida de THEME_* em build time) e fluir
-// como var(--token) — nunca literal em componente/CSS. src/lib/ também
-// hospeda src/lib/brand-presets.ts, paletas de comparação só de dev — por
-// isso o diretório inteiro fica de fora do scan. Ver template.manifest.json.
+// só pode existir em src/lib/brand.ts (lida de THEME_* em build time) e em
+// src/lib/brand-presets.ts (presets do design system, incluindo o que serve
+// de tema padrão), chegando nos componentes como var(--token) — nunca
+// literal em componente/CSS. Por isso o src/lib/ inteiro fica de fora do
+// scan. Ver template.manifest.json.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,7 +40,7 @@ for (const dir of SCAN_DIRS) {
 }
 
 if (violations.length > 0) {
-  console.error('Cor hex hardcoded encontrada fora de src/lib/brand.ts:\n');
+  console.error('Cor hex hardcoded encontrada fora de src/lib/:\n');
   for (const violation of violations) {
     console.error(`  ${violation.file}:${violation.line} — ${violation.matches.join(', ')}`);
   }
