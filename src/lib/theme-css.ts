@@ -14,17 +14,24 @@ export interface ThemeModeVars {
   line: string;
 }
 
-export function modeVars(m: ThemeModeVars): string {
-  return (
-    `--bg:${m.bg};--surface:${m.surface};--surface-raised:${m.surfaceRaised};` +
-    `--ink:${m.ink};--ink-muted:${m.inkMuted};--accent:${m.accent};` +
-    `--accent-soft:${m.accentSoft};--accent-2:${m.accent2};--line:${m.line}`
-  );
+/** Declarações CSS (sem chaves) dos tokens de um modo claro/escuro. */
+export function modeVars(colors: ThemeModeVars): string {
+  return [
+    `--bg:${colors.bg}`,
+    `--surface:${colors.surface}`,
+    `--surface-raised:${colors.surfaceRaised}`,
+    `--ink:${colors.ink}`,
+    `--ink-muted:${colors.inkMuted}`,
+    `--accent:${colors.accent}`,
+    `--accent-soft:${colors.accentSoft}`,
+    `--accent-2:${colors.accent2}`,
+    `--line:${colors.line}`,
+  ].join(';');
 }
 
 // Label do botão de alternância de tema (ThemeToggle.astro), usado tanto no
 // aria-label renderizado no servidor (a partir de THEME_DEFAULT_MODE) quanto
 // no client script que resincroniza depois da resolução de tema no <head>.
-export function themeLabel(mode: string): string {
-  return mode === 'dark' ? 'Alternar para tema claro' : 'Alternar para tema escuro';
+export function themeLabel(currentMode: string): string {
+  return currentMode === 'dark' ? 'Alternar para tema claro' : 'Alternar para tema escuro';
 }

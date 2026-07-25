@@ -13,12 +13,13 @@ const SCAN_DIRS = ['src/components', 'src/layouts', 'src/pages', 'src/styles'];
 const SCAN_EXT = new Set(['.astro', '.css']);
 const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 
-async function walk(dir) {
+/** Todos os arquivos escaneáveis abaixo de `dir`, recursivamente. */
+async function findScannableFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
   const files = [];
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await walk(full)));
+    if (entry.isDirectory()) files.push(...(await findScannableFiles(full)));
     else if (SCAN_EXT.has(path.extname(entry.name))) files.push(full);
   }
   return files;
@@ -26,14 +27,12 @@ async function walk(dir) {
 
 const violations = [];
 for (const dir of SCAN_DIRS) {
-  const files = await walk(path.join(ROOT, dir));
-  for (const file of files) {
+  for (const file of await findScannableFiles(path.join(ROOT, dir))) {
     const content = await readFile(file, 'utf-8');
-    const lines = content.split('\n');
-    lines.forEach((line, i) => {
+    content.split('\n').forEach((line, index) => {
       const matches = line.match(HEX_COLOR);
       if (matches) {
-        violations.push({ file: path.relative(ROOT, file), line: i + 1, matches });
+        violations.push({ file: path.relative(ROOT, file), line: index + 1, matches });
       }
     });
   }
@@ -41,8 +40,8 @@ for (const dir of SCAN_DIRS) {
 
 if (violations.length > 0) {
   console.error('Cor hex hardcoded encontrada fora de src/lib/brand.ts:\n');
-  for (const v of violations) {
-    console.error(`  ${v.file}:${v.line} — ${v.matches.join(', ')}`);
+  for (const violation of violations) {
+    console.error(`  ${violation.file}:${violation.line} — ${violation.matches.join(', ')}`);
   }
   console.error(
     '\nCores de marca devem vir de THEME_* (.env) via src/lib/brand.ts e ser consumidas como var(--token). Ver template.manifest.json.'

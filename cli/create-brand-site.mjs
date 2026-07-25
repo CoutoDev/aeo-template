@@ -26,6 +26,12 @@ const COPY_EXCLUDE = new Set([
   'traefik',
 ]);
 
+const DEFAULTS = {
+  locale: 'pt-BR',
+  devPort: '4321',
+  webPort: '8080',
+};
+
 function printUsage() {
   console.log(`Uso: npx create-brand-site <diretorio> [opcoes]
 
@@ -34,9 +40,9 @@ Opcoes:
   --site-url <url>        URL canonica (ex: https://minhamarca.com.br)
   --description <texto>   Descricao curta da marca
   --location <texto>      Localizacao (opcional, ex: "Campinas, SP")
-  --locale <locale>       Locale (default: pt-BR)
-  --dev-port <porta>      Porta do docker compose "dev" (default: 4321)
-  --web-port <porta>      Porta do docker compose "prod" (default: 8080)
+  --locale <locale>       Locale (default: ${DEFAULTS.locale})
+  --dev-port <porta>      Porta do docker compose "dev" (default: ${DEFAULTS.devPort})
+  --web-port <porta>      Porta do docker compose "prod" (default: ${DEFAULTS.webPort})
   --domain <dominio>      Dominio publico (ex: minhamarca.com.br), usado
                           pelo Traefik compartilhado (ver traefik/README.md).
                           Default: extraido de --site-url.
@@ -90,31 +96,42 @@ function domainFromUrl(siteUrl) {
   }
 }
 
+// Flags da linha de comando com os nomes usados no resto do script.
+const flags = {
+  siteName: values['site-name'],
+  siteUrl: values['site-url'],
+  description: values.description,
+  location: values.location,
+  locale: values.locale,
+  devPort: values['dev-port'],
+  webPort: values['web-port'],
+  domain: values.domain,
+};
+
+// Só os campos obrigatórios disparam o modo interativo; o resto cai no default.
 async function collectAnswers() {
-  const needsPrompt = !values['site-name'] || !values['site-url'] || !values.description;
-  if (!needsPrompt) {
+  const hasRequiredFlags = flags.siteName && flags.siteUrl && flags.description;
+  if (hasRequiredFlags) {
     return {
-      siteName: values['site-name'],
-      siteUrl: values['site-url'],
-      description: values.description,
-      location: values.location ?? '',
-      locale: values.locale ?? 'pt-BR',
-      devPort: values['dev-port'] ?? '4321',
-      webPort: values['web-port'] ?? '8080',
-      domain: values.domain ?? domainFromUrl(values['site-url']),
+      ...flags,
+      location: flags.location ?? '',
+      locale: flags.locale ?? DEFAULTS.locale,
+      devPort: flags.devPort ?? DEFAULTS.devPort,
+      webPort: flags.webPort ?? DEFAULTS.webPort,
+      domain: flags.domain ?? domainFromUrl(flags.siteUrl),
     };
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
-    const siteName = values['site-name'] ?? (await prompt(rl, 'Nome da marca'));
-    const siteUrl = values['site-url'] ?? (await prompt(rl, 'URL do site (ex: https://minhamarca.com.br)'));
-    const description = values.description ?? (await prompt(rl, 'Descrição curta da marca'));
-    const location = values.location ?? (await prompt(rl, 'Localização (opcional)'));
-    const locale = values.locale ?? (await prompt(rl, 'Locale', 'pt-BR'));
-    const devPort = values['dev-port'] ?? (await prompt(rl, 'Porta do docker compose "dev"', '4321'));
-    const webPort = values['web-port'] ?? (await prompt(rl, 'Porta do docker compose "prod"', '8080'));
-    const domain = values.domain ?? (await prompt(rl, 'Domínio público (Traefik)', domainFromUrl(siteUrl)));
+    const siteName = flags.siteName ?? (await prompt(rl, 'Nome da marca'));
+    const siteUrl = flags.siteUrl ?? (await prompt(rl, 'URL do site (ex: https://minhamarca.com.br)'));
+    const description = flags.description ?? (await prompt(rl, 'Descrição curta da marca'));
+    const location = flags.location ?? (await prompt(rl, 'Localização (opcional)'));
+    const locale = flags.locale ?? (await prompt(rl, 'Locale', DEFAULTS.locale));
+    const devPort = flags.devPort ?? (await prompt(rl, 'Porta do docker compose "dev"', DEFAULTS.devPort));
+    const webPort = flags.webPort ?? (await prompt(rl, 'Porta do docker compose "prod"', DEFAULTS.webPort));
+    const domain = flags.domain ?? (await prompt(rl, 'Domínio público (Traefik)', domainFromUrl(siteUrl)));
     return { siteName, siteUrl, description, location, locale, devPort, webPort, domain };
   } finally {
     rl.close();
@@ -130,25 +147,21 @@ function slugify(input) {
     .replace(/(^-+|-+$)/g, '');
 }
 
-const answers = await collectAnswers();
-if (!answers.siteName || !answers.siteUrl || !answers.description) {
-  console.error('Erro: nome, URL e descrição da marca são obrigatórios.');
-  process.exit(1);
+/** Copia o template para a nova instância, pulando o que é do repo/pacote. */
+async function copyTemplate() {
+  await cp(PACKAGE_ROOT, targetDir, {
+    recursive: true,
+    filter: (src) => {
+      const rel = path.relative(PACKAGE_ROOT, src);
+      if (rel === '') return true;
+      const topLevelName = rel.split(path.sep)[0];
+      return !COPY_EXCLUDE.has(topLevelName);
+    },
+  });
 }
 
-await cp(PACKAGE_ROOT, targetDir, {
-  recursive: true,
-  filter: (src) => {
-    const rel = path.relative(PACKAGE_ROOT, src);
-    if (rel === '') return true;
-    const top = rel.split(path.sep)[0];
-    return !COPY_EXCLUDE.has(top);
-  },
-});
-
-const slug = slugify(answers.siteName) || 'brand-site';
-
-const envContent = `SITE_NAME=${answers.siteName}
+async function writeEnvFile(answers, slug) {
+  const content = `SITE_NAME=${answers.siteName}
 SITE_URL=${answers.siteUrl}
 SITE_DESCRIPTION=${answers.description}
 SITE_LOCATION=${answers.location}
@@ -162,28 +175,33 @@ WEB_PORT=${answers.webPort}
 DOMAIN=${answers.domain}
 BRAND_SLUG=${slug}
 `;
-await writeFile(path.join(targetDir, '.env'), envContent, 'utf-8');
+  await writeFile(path.join(targetDir, '.env'), content, 'utf-8');
+}
 
-const pkgPath = path.join(targetDir, 'package.json');
-const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
-const templateVersion = pkg.version;
-pkg.name = slug;
-delete pkg.bin;
-await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+/** Renomeia o package.json para a marca e devolve a versão do template. */
+async function personalizePackageJson(slug) {
+  const pkgPath = path.join(targetDir, 'package.json');
+  const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
+  const templateVersion = pkg.version;
+  pkg.name = slug;
+  delete pkg.bin;
+  await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+  return templateVersion;
+}
 
 // Ancora a versão do template usada na criação desta instância. Não
 // implementa update nenhum agora — só evita que uma futura ferramenta de
 // atualização (diff rastreado ou split em pacote npm) precise de outra
 // migração de formato para saber "a partir de onde" atualizar.
-const templateVersionContent = JSON.stringify(
-  { template: 'create-brand-site', version: templateVersion },
-  null,
-  2
-) + '\n';
-await writeFile(path.join(targetDir, '.template-version'), templateVersionContent, 'utf-8');
+async function writeTemplateVersion(templateVersion) {
+  const content =
+    JSON.stringify({ template: 'create-brand-site', version: templateVersion }, null, 2) + '\n';
+  await writeFile(path.join(targetDir, '.template-version'), content, 'utf-8');
+}
 
-console.log(`\n✓ Instância "${answers.siteName}" criada em ${targetDir}`);
-console.log(`\nPróximos passos:
+function printNextSteps(siteName) {
+  console.log(`\n✓ Instância "${siteName}" criada em ${targetDir}`);
+  console.log(`\nPróximos passos:
   cd ${targetDirName}
   npm install
   npm run dev                        # dev local
@@ -194,3 +212,17 @@ Rodando várias marcas na mesma VPS atrás do proxy compartilhado (Traefik)?
 Ver traefik/README.md no template — precisa de "docker network create edge"
 uma única vez por VPS antes do primeiro "docker compose --profile prod up".
 `);
+}
+
+const answers = await collectAnswers();
+if (!answers.siteName || !answers.siteUrl || !answers.description) {
+  console.error('Erro: nome, URL e descrição da marca são obrigatórios.');
+  process.exit(1);
+}
+
+const slug = slugify(answers.siteName) || 'brand-site';
+
+await copyTemplate();
+await writeEnvFile(answers, slug);
+await writeTemplateVersion(await personalizePackageJson(slug));
+printNextSteps(answers.siteName);

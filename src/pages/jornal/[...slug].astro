@@ -2,7 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
-import { brand } from '../../lib/brand';
+import { formatLongDate } from '../../lib/date';
+import { articleSchema } from '../../lib/schema';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
@@ -14,39 +15,29 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
-
-const articleSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: post.data.title,
-  description: post.data.description,
-  datePublished: post.data.publishDate.toISOString(),
-  ...(post.data.updatedDate ? { dateModified: post.data.updatedDate.toISOString() } : {}),
-  ...(post.data.cover ? { image: new URL(post.data.cover.src, Astro.site).toString() } : {}),
-  author: { '@type': 'Person', name: post.data.author },
-};
+const { title, description, publishDate, author, cover, coverAlt, updatedDate } = post.data;
 ---
 
 <BaseLayout
-  title={post.data.title}
-  description={post.data.description}
-  jsonLd={articleSchema}
-  publishDate={post.data.publishDate}
-  updatedDate={post.data.updatedDate}
-  author={post.data.author}
+  title={title}
+  description={description}
+  jsonLd={articleSchema(post, Astro.site)}
+  publishDate={publishDate}
+  updatedDate={updatedDate}
+  author={author}
 >
   <article class="post section">
     <p class="eyebrow">
-      {post.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'long', year: 'numeric' })}
-      · {post.data.author}
+      {formatLongDate(publishDate)}
+      · {author}
     </p>
-    <h1 class="post__title">{post.data.title}</h1>
-    <p class="post__lede">{post.data.description}</p>
-    {post.data.cover && (
+    <h1 class="post__title">{title}</h1>
+    <p class="post__lede">{description}</p>
+    {cover && (
       <Image
         class="post__cover"
-        src={post.data.cover}
-        alt={post.data.coverAlt ?? post.data.title}
+        src={cover}
+        alt={coverAlt ?? title}
         widths={[600, 1200]}
         sizes="42rem"
         format="webp"

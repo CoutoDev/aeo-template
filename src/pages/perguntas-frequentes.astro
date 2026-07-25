@@ -1,37 +1,38 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AnswerBlock from '../components/AnswerBlock.astro';
-import { getCollection, render } from 'astro:content';
-import { getRequiredPage } from '../lib/content';
+import { render } from 'astro:content';
+import { getFaqsInOrder, getRequiredPage } from '../lib/content';
+import { faqPageSchema } from '../lib/schema';
 
-const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order);
-const rendered = await Promise.all(faqs.map((f) => render(f)));
+const faqs = await getFaqsInOrder();
+// O corpo Markdown de cada FAQ (a elaboração abaixo da resposta curta) precisa
+// ser renderizado fora do JSX — daí o par ordenado faq/componente.
+const faqSections = await Promise.all(
+  faqs.map(async (faq) => ({ faq, Body: (await render(faq)).Content }))
+);
 const page = await getRequiredPage('faq');
-
-const faqSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.data.question,
-    acceptedAnswer: { '@type': 'Answer', text: f.data.shortAnswer },
-  })),
-};
 ---
 
-<BaseLayout title={page.data.title} description={page.data.metaDescription} jsonLd={faqSchema}>
+<BaseLayout
+  title={page.data.title}
+  description={page.data.metaDescription}
+  jsonLd={faqPageSchema(faqs)}
+>
   <section class="section">
     <p class="eyebrow">{page.data.title}</p>
     <h1 class="section__title">{page.data.heading ?? page.data.title}</h1>
     <div class="answer-list">
-      {faqs.map((f, i) => {
-        const { Content } = rendered[i];
-        return (
-          <AnswerBlock question={f.data.question} shortAnswer={f.data.shortAnswer} index={i + 1} id={f.id}>
-            <Content />
-          </AnswerBlock>
-        );
-      })}
+      {faqSections.map(({ faq, Body }, index) => (
+        <AnswerBlock
+          question={faq.data.question}
+          shortAnswer={faq.data.shortAnswer}
+          index={index + 1}
+          id={faq.id}
+        >
+          <Body />
+        </AnswerBlock>
+      ))}
     </div>
   </section>
 </BaseLayout>

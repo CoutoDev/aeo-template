@@ -3,11 +3,13 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
 import { brand, theme, themeVars } from '../lib/brand';
+import { organizationSchema } from '../lib/schema';
 import '../styles/global.css';
 
 interface Props {
   title: string;
   description: string;
+  /** JSON-LD específico da página, somado ao schema da Organization. */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   publishDate?: Date;
   updatedDate?: Date;
@@ -16,17 +18,8 @@ interface Props {
 
 const { title, description, jsonLd, publishDate, updatedDate, author } = Astro.props;
 
-const ORG = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: brand.name,
-  url: Astro.site?.toString(),
-  description: brand.description,
-  ...(brand.areaServed ? { areaServed: brand.areaServed } : {}),
-};
-
 const pageSchemas = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -35,7 +28,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta charset="UTF-8" />
     <!-- Resolve o tema (localStorage > preferência do SO > default da marca)
          antes do primeiro paint, pra não piscar o tema errado. Precisa ser
-         is:inline (síncrono, sem defer) e vir antes do <style> de tokens. -->
+         is:inline (síncrono, sem defer) e vir antes do <style> de tokens —
+         por ser inline não pode importar nada, então a chave "theme" do
+         localStorage aparece literal aqui e em ThemeToggle.astro. -->
     <script is:inline>
       (function () {
         try {
@@ -59,13 +54,13 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href={theme.fontImportUrl} />
     <style set:html={themeVars} />
-    <link rel="canonical" href={canonicalURL} />
+    <link rel="canonical" href={canonicalUrl} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:url" content={canonicalUrl} />
 
     <!-- Sinais de autoria/data — usados por motores de resposta como sinal de confiabilidade (E-E-A-T) -->
     {author && <meta name="author" content={author} />}
@@ -75,7 +70,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <!-- Aponta explicitamente para o resumo estruturado do site, pensado para agentes/LLMs -->
     <link rel="llms-txt" href="/llms.txt" />
 
-    <JsonLd data={ORG} />
+    <JsonLd data={organizationSchema(Astro.site)} />
     {pageSchemas.map((schema) => <JsonLd data={schema} />)}
   </head>
   <body>

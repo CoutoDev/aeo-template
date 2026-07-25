@@ -1,13 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
-import { brand } from '../../lib/brand';
-import { getRequiredPage } from '../../lib/content';
+import { getPostsNewestFirst, getRequiredPage } from '../../lib/content';
+import { formatShortDate } from '../../lib/date';
 
-const posts = (await getCollection('posts')).sort(
-  (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
-);
+const posts = await getPostsNewestFirst();
 const page = await getRequiredPage('jornal');
 ---
 
@@ -16,22 +13,22 @@ const page = await getRequiredPage('jornal');
     <p class="eyebrow">{page.data.title}</p>
     <h1 class="section__title">{page.data.heading ?? page.data.title}</h1>
     <div class="post-list">
-      {posts.map((p) => (
-        <a class="post-row" href={`/jornal/${p.id}`}>
-          {p.data.cover && (
+      {posts.map((post) => (
+        <a class="post-row" href={`/jornal/${post.id}`}>
+          {post.data.cover && (
             <Image
               class="post-row__thumb"
-              src={p.data.cover}
-              alt={p.data.coverAlt ?? p.data.title}
+              src={post.data.cover}
+              alt={post.data.coverAlt ?? post.data.title}
               widths={[200, 400]}
               sizes="8rem"
               format="webp"
             />
           )}
           <div class="post-row__body">
-            <span class="eyebrow">{p.data.publishDate.toLocaleDateString(brand.locale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-            <h2>{p.data.title}</h2>
-            <p>{p.data.description}</p>
+            <span class="eyebrow">{formatShortDate(post.data.publishDate)}</span>
+            <h2>{post.data.title}</h2>
+            <p>{post.data.description}</p>
           </div>
         </a>
       ))}

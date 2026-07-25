@@ -49,9 +49,21 @@ import { brand } from '../lib/brand';
   const dataEl = document.getElementById('brand-presets-data');
   const presets: BrandPreset[] = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
 
-  const findPreset = (key: string) => presets.find((p) => p.key === key);
+  const findPreset = (key: string) => presets.find((preset) => preset.key === key);
 
-  function ensureFont(url?: string) {
+  // localStorage pode lançar (modo privado, cookies bloqueados) — a escolha do
+  // preset é conveniência de dev, então falha em silêncio.
+  const rememberedPreset = (): string => {
+    try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; }
+  };
+  const rememberPreset = (key: string) => {
+    try {
+      if (key) localStorage.setItem(STORAGE_KEY, key);
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
+
+  function ensureFontLoaded(url?: string) {
     if (!url || document.querySelector(`link[href="${url}"]`)) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
@@ -59,17 +71,27 @@ import { brand } from '../lib/brand';
     document.head.appendChild(link);
   }
 
+  function overrideCss(preset: BrandPreset): string {
+    return [
+      `:root{--font-display:${preset.fontDisplay};--radius:${preset.radius};`,
+      `--accent-border-width:${preset.accentBorderWidth};--space-ratio:${preset.spaceRatio}}`,
+      `[data-theme="dark"]{${modeVars(preset.dark)}}`,
+      `[data-theme="light"]{${modeVars(preset.light)}}`,
+    ].join('');
+  }
+
+  /** Chave vazia = voltar para a marca desta instância (remove o override). */
   function applyPreset(key: string) {
     let styleEl = document.getElementById(STYLE_ID);
     if (!key) {
       styleEl?.remove();
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      rememberPreset('');
       return;
     }
     const preset = findPreset(key);
     if (!preset) return;
 
-    ensureFont(preset.fontImportUrl);
+    ensureFontLoaded(preset.fontImportUrl);
     if (!styleEl) {
       styleEl = document.createElement('style');
       styleEl.id = STYLE_ID;
@@ -77,21 +99,18 @@ import { brand } from '../lib/brand';
     }
     // Anexado depois do <style> de tokens do BaseLayout — mesma
     // especificidade, ordem de origem decide, sem precisar de !important.
-    styleEl.textContent =
-      `:root{--font-display:${preset.fontDisplay};--radius:${preset.radius};` +
-      `--accent-border-width:${preset.accentBorderWidth};--space-ratio:${preset.spaceRatio}}` +
-      `[data-theme="dark"]{${modeVars(preset.dark)}}` +
-      `[data-theme="light"]{${modeVars(preset.light)}}`;
-    try { localStorage.setItem(STORAGE_KEY, key); } catch {}
+    styleEl.textContent = overrideCss(preset);
+    rememberPreset(key);
   }
 
   document.querySelectorAll<HTMLSelectElement>('[data-brand-preset-select]').forEach((select) => {
-    let stored = '';
-    try { stored = localStorage.getItem(STORAGE_KEY) || ''; } catch {}
-    if (stored && findPreset(stored)) {
-      select.value = stored;
-      applyPreset(stored);
+    const remembered = rememberedPreset();
+    if (remembered && findPreset(remembered)) {
+      select.value = remembered;
+      applyPreset(remembered);
     }
-    select.addEventListener('change', (e) => applyPreset((e.target as HTMLSelectElement).value));
+    select.addEventListener('change', (event) =>
+      applyPreset((event.target as HTMLSelectElement).value)
+    );
   });
 </script>

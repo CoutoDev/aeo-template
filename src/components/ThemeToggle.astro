@@ -53,23 +53,29 @@ const initialLabel = themeLabel(theme.defaultMode);
 <script>
   import { themeLabel } from '../lib/theme-css';
 
+  // Mesma chave lida pelo script inline do <head> (BaseLayout.astro).
+  const STORAGE_KEY = 'theme';
+
+  const root = document.documentElement;
+  const syncLabel = (button: Element, mode: string) =>
+    button.setAttribute('aria-label', themeLabel(mode));
+
   // O modo pode ter sido corrigido pelo script bloqueante do <head> (system
   // preference / localStorage) depois do aria-label ser renderizado no
   // servidor a partir do THEME_DEFAULT_MODE — resincroniza aqui.
-  document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
-    btn.setAttribute('aria-label', themeLabel(document.documentElement.dataset.theme ?? 'dark'));
+  document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+    syncLabel(button, root.dataset.theme ?? 'dark');
   });
 
   document.addEventListener('click', (event) => {
-    const btn = (event.target as HTMLElement).closest('[data-theme-toggle]');
-    if (!btn) return;
+    const button = (event.target as HTMLElement).closest('[data-theme-toggle]');
+    if (!button) return;
 
-    const root = document.documentElement;
-    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
-    root.dataset.theme = next;
+    const nextMode = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = nextMode;
     try {
-      localStorage.setItem('theme', next);
+      localStorage.setItem(STORAGE_KEY, nextMode);
     } catch {}
-    btn.setAttribute('aria-label', themeLabel(next));
+    syncLabel(button, nextMode);
   });
 </script>

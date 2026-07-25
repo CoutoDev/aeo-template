@@ -24,6 +24,7 @@ for (const [key, value] of Object.entries({ SITE_NAME, SITE_URL, SITE_DESCRIPTIO
   }
 }
 
+/** Lê o frontmatter de todos os .md de uma collection. */
 async function readCollection(name) {
   const dir = path.join(ROOT, 'src/content', name);
   const files = await readdir(dir);
@@ -31,11 +32,24 @@ async function readCollection(name) {
   for (const file of files) {
     if (!file.endsWith('.md')) continue;
     const raw = await readFile(path.join(dir, file), 'utf-8');
-    const { data, content } = matter(raw);
     const slug = file.replace(/\.md$/, '');
-    items.push({ slug, data, content });
+    items.push({ slug, data: matter(raw).data });
   }
   return items;
+}
+
+/** Bloco "## Titulo" seguido de uma entrada por item: titulo, resumo, fonte. */
+function section(heading, entries) {
+  return [
+    `## ${heading}`,
+    '',
+    ...entries.flatMap(({ title, summary, source }) => [
+      `### ${title}`,
+      summary,
+      `Fonte: ${source}`,
+      '',
+    ]),
+  ];
 }
 
 const faqs = (await readCollection('faq')).sort((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0));
@@ -43,30 +57,29 @@ const posts = (await readCollection('posts')).sort(
   (a, b) => new Date(b.data.publishDate) - new Date(a.data.publishDate)
 );
 
-const lines = [];
-lines.push(`# ${SITE_NAME}`);
-lines.push('');
-lines.push(`> ${SITE_DESCRIPTION}`);
-lines.push('');
-
-lines.push('## Perguntas frequentes');
-lines.push('');
-for (const f of faqs) {
-  lines.push(`### ${f.data.question}`);
-  lines.push(f.data.shortAnswer);
-  lines.push(`Fonte: ${SITE_URL}/perguntas-frequentes#${f.slug}`);
-  lines.push('');
-}
-
-lines.push('## Jornal (artigos)');
-lines.push('');
-for (const p of posts) {
-  lines.push(`### ${p.data.title}`);
-  lines.push(p.data.description);
-  lines.push(`Fonte: ${SITE_URL}/jornal/${p.slug}`);
-  lines.push('');
-}
+const llmsTxt = [
+  `# ${SITE_NAME}`,
+  '',
+  `> ${SITE_DESCRIPTION}`,
+  '',
+  ...section(
+    'Perguntas frequentes',
+    faqs.map((faq) => ({
+      title: faq.data.question,
+      summary: faq.data.shortAnswer,
+      source: `${SITE_URL}/perguntas-frequentes#${faq.slug}`,
+    }))
+  ),
+  ...section(
+    'Jornal (artigos)',
+    posts.map((post) => ({
+      title: post.data.title,
+      summary: post.data.description,
+      source: `${SITE_URL}/jornal/${post.slug}`,
+    }))
+  ),
+].join('\n');
 
 await mkdir(path.join(ROOT, 'public'), { recursive: true });
-await writeFile(path.join(ROOT, 'public/llms.txt'), lines.join('\n'), 'utf-8');
+await writeFile(path.join(ROOT, 'public/llms.txt'), llmsTxt, 'utf-8');
 console.log(`llms.txt gerado com ${faqs.length} perguntas e ${posts.length} artigos.`);

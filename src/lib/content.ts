@@ -1,4 +1,4 @@
-import { getEntry } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 
 // getEntry() na collection "pages" (carregada via glob()) não consegue provar
@@ -12,4 +12,16 @@ export async function getRequiredPage(id: string): Promise<CollectionEntry<'page
     throw new Error(`Conteúdo obrigatório ausente: src/content/pages/${id}.md`);
   }
   return entry;
+}
+
+/** FAQs na ordem editorial definida pelo campo `order` do frontmatter. */
+export async function getFaqsInOrder(): Promise<CollectionEntry<'faq'>[]> {
+  const faqs = await getCollection('faq');
+  return faqs.sort((a, b) => a.data.order - b.data.order);
+}
+
+/** Posts do mais recente para o mais antigo. */
+export async function getPostsNewestFirst(): Promise<CollectionEntry<'posts'>[]> {
+  const posts = await getCollection('posts');
+  return posts.sort((a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf());
 }
