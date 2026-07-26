@@ -11,7 +11,16 @@ RUN npm install
 FROM base AS dev
 COPY . .
 EXPOSE 4321
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# --ignore-lock: each container is a fresh, isolated single-process
+# environment — astro's dev-server lock file (astro/.astro/dev.json)
+# survives on the bind-mounted host filesystem across container
+# restarts, and since PID namespaces reset per-container, the new
+# process deterministically reuses the old lock's PID, making astro
+# falsely believe a live instance is still running. There's no real
+# concurrent-instance risk to protect against inside a container, so
+# skip the check entirely instead of relying on --force (which would
+# send a kill signal to whatever unrelated process holds that PID).
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--ignore-lock"]
 
 # ---- Server: runtime image for a single brand instance ----
 # Unlike a typical static-site image, no brand content is known at image
