@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+# wait -n (usado mais abaixo pra supervisionar dois processos) e recurso do
+# bash, nao existe no /bin/sh (busybox ash) do Alpine — ver Dockerfile.
 # Entrypoint da imagem "brand-engine": a imagem nao carrega conteudo de
 # nenhuma marca especifica (ver README) — este script busca o conteudo real
 # no boot, decide se precisa reconstruir o site, e sobe o nginx.
@@ -22,7 +24,8 @@ require_env() {
   fi
 }
 
-for var in SITE_NAME SITE_URL SITE_DESCRIPTION BRAND_SLUG CONTENT_REPO_URL; do
+for var in SITE_NAME SITE_URL SITE_DESCRIPTION BRAND_SLUG CONTENT_REPO_URL \
+  CONTENT_REPO_TOKEN TINA_ADMIN_USER TINA_ADMIN_PASSWORD_HASH; do
   require_env "$var"
 done
 
@@ -97,5 +100,20 @@ else
   fi
 fi
 
+log "Subindo backend do Tina..."
+TINA_SQLITE_PATH="${TINA_SQLITE_PATH:-$DATA_DIR/tina.sqlite}" npm run tina:server &
+TINA_PID=$!
+
 log "Subindo nginx..."
-exec nginx -g "daemon off;"
+nginx -g "daemon off;" &
+NGINX_PID=$!
+
+# Dois processos de longa duracao num container so — supervisor simples: se
+# qualquer um cair, derruba o outro e sai (deixa o restart policy do Docker
+# reiniciar o container inteiro, em vez de ficar rodando pela metade).
+trap 'kill $TINA_PID $NGINX_PID 2>/dev/null' TERM INT
+wait -n $TINA_PID $NGINX_PID
+exit_code=$?
+log "Um dos processos (tina ou nginx) encerrou, derrubando o outro..."
+kill $TINA_PID $NGINX_PID 2>/dev/null
+exit $exit_code

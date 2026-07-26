@@ -20,10 +20,19 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # full Node/Astro toolchain *and* nginx together, instead of splitting
 # build/serve across stages the way a content-baked-in image would.
 FROM base AS server
-RUN apk add --no-cache nginx git
+RUN apk add --no-cache nginx git bash
 COPY . .
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-EXPOSE 80
+# Schema do Tina (tina/schema.ts) e template-owned, nao depende de conteudo
+# de marca nenhuma — gerar aqui, uma vez por imagem, em vez de a cada boot
+# de container. TINA_PUBLIC_IS_LOCAL=true (dentro do script "tina:build")
+# evita um bug de bundling do @tinacms/cli com adapters custom (sqlite-level)
+# que so aparece indo por esse caminho; o backend real (tina/database.ts,
+# SQLite + GitHub por marca) so roda depois, via tina/server.mjs no boot do
+# container — ver entrypoint.sh. O heap maior e necessario mesmo pra
+# conteudo minimo (medido ~2-4GB no build do schema + bundle do admin UI).
+RUN NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build
+EXPOSE 80 4001
 ENTRYPOINT ["/entrypoint.sh"]

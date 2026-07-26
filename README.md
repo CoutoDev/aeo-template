@@ -77,6 +77,30 @@ em build-time da imagem. Nenhum `.env` de marca entra na imagem genérica (ver
 Numa instância real, esse caminho é o destino do clone do repositório de
 conteúdo da marca (ver `entrypoint.sh`), não conteúdo commitado neste repo.
 
+## Backend do Tina (CMS self-hosted)
+
+Cada instância sobe, além do Nginx, um segundo processo Node (`tina/server.mjs`)
+expondo o GraphQL do [TinaCMS](https://tina.io) self-hosted em `/api/tina/gql`,
+com a UI de edição estática em `/admin` (atrás do Traefik, ambos os paths do
+mesmo domínio da marca — ver labels em `docker-compose.yml`). Sem Tina Cloud:
+
+- **Auth**: usuário/senha único por marca via HTTP Basic Auth, checado a cada
+  requisição (`tina/auth.ts`). Gere o hash da senha com
+  `node scripts/hash-tina-password.mjs "sua-senha"` e preencha
+  `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no `.env`.
+- **Banco**: SQLite embutido (`sqlite-level`, sem serviço externo — nunca
+  Postgres/Mongo por marca), um arquivo por instância no volume persistente.
+- **Git provider**: GitHub, via `CONTENT_REPO_TOKEN` (fine-grained PAT ou
+  deploy key com escopo restrito a este único repositório — nunca um token
+  amplo de organização).
+- **Schema** (`tina/schema.ts`) espelha exatamente as collections de
+  `src/content.config.ts` (`pages`/`faq`/`posts`) — é o mesmo conteúdo dos
+  dois lados, não um modelo paralelo.
+
+O schema/admin UI (`tina/__generated__/`, `public/admin/`) é gerado uma vez
+na imagem (`npm run tina:build`, ver `Dockerfile`) — não depende de conteúdo
+de marca, só do schema, então não roda a cada boot de container.
+
 ## Múltiplas marcas na mesma VPS
 
 Cada instância já roda isolada em container. Para dar a cada marca um domínio

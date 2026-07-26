@@ -27,6 +27,10 @@ services:
       - .env
     ports:
       - "${WEB_PORT:-8080}:80"
+      # Acesso direto ao backend do Tina sem Traefik (dev/debug). Atrás do
+      # Traefik, o roteamento por path já cobre /admin e /api/tina na porta
+      # 80 pública — ver labels abaixo.
+      - "${TINA_PORT:-4001}:4001"
     networks:
       - edge
     volumes:
@@ -38,23 +42,35 @@ services:
       - data:/app/data
     labels:
       - "traefik.enable=true"
+      # Site estatico (Astro/nginx) — rota "pega tudo" pro dominio da marca.
       - "traefik.http.routers.${BRAND_SLUG:-brand}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.entrypoints=websecure"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
-      - "traefik.http.services.${BRAND_SLUG:-brand}.loadbalancer.server.port=80"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.service=${BRAND_SLUG:-brand}-web"
+      - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=80"
+      # Backend do Tina (admin UI + GraphQL) — mesmo container, processo e
+      # porta diferentes (ver entrypoint.sh). Prioridade maior que a rota
+      # "pega tudo" acima, senão o Traefik nunca chega a checar o PathPrefix.
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/tina`))"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.entrypoints=websecure"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.priority=10"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.service=${BRAND_SLUG:-brand}-tina"
+      - "traefik.http.services.${BRAND_SLUG:-brand}-tina.loadbalancer.server.port=4001"
     # Teto de recurso por marca — relevante em VPS com várias marcas atrás do
     # mesmo Traefik: sem isso, uma marca sob pico de tráfego (ou de build)
     # pode disputar CPU/memória com as outras que compartilham o host.
     # Diferente do modelo antigo (nginx puro servindo estático, ~poucos MB),
-    # este container roda `astro build` no boot/troca de conteúdo — medido em
-    # ~420MB de pico pra um conteúdo mínimo de exemplo; conteúdo real de marca
-    # (mais posts/imagens) deve pedir mais. Ajuste por marca conforme o
-    # tamanho real do conteúdo dela.
+    # este container tem dois custos a somar: o pico do `astro build` no
+    # boot/troca de conteúdo (medido ~420MB pra um conteúdo mínimo de
+    # exemplo — conteúdo real de marca, com mais posts/imagens, pede mais) e
+    # o backend do Tina em regime (medido ~100MB parado). Ajuste por marca
+    # conforme o tamanho real do conteúdo dela.
     deploy:
       resources:
         limits:
           cpus: '1.0'
-          memory: 512M
+          memory: 768M
     profiles:
       - prod
 

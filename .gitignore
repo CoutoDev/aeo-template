@@ -3,6 +3,12 @@ dist/
 # generated types
 .astro/
 
+# artefatos gerados por `npm run tina:build` (schema/client/admin UI do
+# Tina) — ver Dockerfile. Nao dependem de conteudo de marca, mas sao
+# gerados, nao escritos a mao.
+tina/__generated__/
+public/admin/
+
 # symlink de dev pra templates/brand-content-example, criado por
 # scripts/ensure-example-content.mjs (ver README) — conteúdo de marca real
 # nunca vive aqui, é clonado em runtime (ver entrypoint.sh)
