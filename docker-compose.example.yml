@@ -5,12 +5,14 @@
 #
 # Atualizar o template: troque a tag da imagem abaixo e rode
 #   docker compose pull && docker compose up -d
-# Uma marca específica pode ficar presa numa tag anterior (não seguir
-# "latest") se um update quebrar algo só pra ela — ver README, "Atualizar o
-# template".
+# Ver README, "Atualizar o template" / "Rollback".
 services:
   web:
-    image: ghcr.io/coutodev/brand-engine:latest
+    # Fixe numa tag concreta (versão ou "sha-<commit>") por marca — "latest"
+    # move a marca a cada push pro main (ver ci.yml) e torna rollback
+    # impossível sem editar isto primeiro. Publicadas em
+    # https://github.com/CoutoDev/aeo-template/pkgs/container/brand-engine.
+    image: ghcr.io/coutodev/brand-engine:0.5.2
     env_file:
       - .env
     ports:

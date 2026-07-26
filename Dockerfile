@@ -25,17 +25,6 @@ COPY . .
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-# CI publica "latest"/"sha-<commit>" em TODO push pro main (ver
-# .github/workflows/ci.yml), a maioria sem bump de package.json "version" —
-# sem isso, o carimbo de build (entrypoint.sh) so muda quando ALGUEM lembra
-# de bumpar a versão, e um rollback pra uma tag anterior com a MESMA versão
-# no package.json não dispara rebuild nenhum: o site continua servindo o
-# dist da imagem nova (confirmado: é exatamente o bug que rollback existe
-# pra resolver). TEMPLATE_BUILD_ID (default: a própria "version", pra
-# "docker build" local sem o --build-arg continuar funcionando como antes)
-# da à imagem uma identidade única por commit, não por bump manual.
-ARG TEMPLATE_BUILD_ID
-ENV TEMPLATE_BUILD_ID=${TEMPLATE_BUILD_ID}
 # Schema do Tina (tina/schema.ts) e template-owned, nao depende de conteudo
 # de marca nenhuma — gerar aqui, uma vez por imagem, em vez de a cada boot
 # de container. TINA_PUBLIC_IS_LOCAL=true (dentro do script "tina:build")
@@ -45,5 +34,19 @@ ENV TEMPLATE_BUILD_ID=${TEMPLATE_BUILD_ID}
 # container — ver entrypoint.sh. O heap maior e necessario mesmo pra
 # conteudo minimo (medido ~2-4GB no build do schema + bundle do admin UI).
 RUN NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build
+# CI publica "latest"/"sha-<commit>" em TODO push pro main (ver
+# .github/workflows/ci.yml), a maioria sem bump de package.json "version" —
+# sem isso, o carimbo de build (entrypoint.sh) so muda quando ALGUEM lembra
+# de bumpar a versão, e um rollback pra uma tag anterior com a MESMA versão
+# no package.json não dispara rebuild nenhum: o site continua servindo o
+# dist da imagem nova (confirmado: é exatamente o bug que rollback existe
+# pra resolver). TEMPLATE_BUILD_ID (default: a própria "version", pra
+# "docker build" local sem o --build-arg continuar funcionando como antes)
+# da à imagem uma identidade única por commit, não por bump manual. Fica
+# DEPOIS do "RUN npm run tina:build" (~48s) de proposito: como ARG/ENV muda
+# a cada commit, colocar antes do RUN invalidaria o cache desse passo em
+# toda publicação — só é lido em runtime pelo entrypoint.sh, não no build.
+ARG TEMPLATE_BUILD_ID
+ENV TEMPLATE_BUILD_ID=${TEMPLATE_BUILD_ID}
 EXPOSE 80 4001
 ENTRYPOINT ["/entrypoint.sh"]

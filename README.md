@@ -207,9 +207,11 @@ arquivo pro repositório/servidor da marca junto com o `.env` dela.
 
 ## Atualizar o template
 
-Trocar a tag da imagem no `docker-compose.example.yml` da marca (ex: de
-`latest` pra uma versão fixa, ou de uma versão pra outra) e rodar
-`docker compose pull && docker compose up -d` já é suficiente — o carimbo de
+`docker-compose.example.yml` já sobe fixado numa versão concreta (não
+`latest` — ver comentário no arquivo: um tag flutuante torna rollback
+impossível sem editar isto primeiro). Trocar a tag da imagem nele pra uma
+versão mais nova e rodar `docker compose pull && docker compose up -d` já é
+suficiente — o carimbo de
 build compara o commit de conteúdo junto com a identidade da imagem
 (`TEMPLATE_BUILD_ID`, o sha do commit que o CI usou pra publicar — ver
 `ci.yml`/`Dockerfile` — não a `version` do `package.json`, que nem sempre
