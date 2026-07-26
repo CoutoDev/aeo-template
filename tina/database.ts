@@ -1,4 +1,5 @@
 import { createDatabase, createLocalDatabase, FilesystemBridge } from '@tinacms/datalayer';
+import type { GitProvider } from '@tinacms/datalayer';
 import { GitHubProvider } from 'tinacms-gitprovider-github';
 import { SqliteLevel } from 'sqlite-level';
 
@@ -16,6 +17,37 @@ function parseGitHubRepoUrl(url: string): { owner: string; repo: string } {
   return { owner: match[1], repo: match[2] };
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} nao definida — obrigatoria pro backend do Tina. Ver .env.example.`);
+  }
+  return value;
+}
+
+// Construido só na primeira escrita de verdade (onPut/onDelete), nao na
+// leitura: CONTENT_REPO_TOKEN e obrigatorio só pra quem realmente publica
+// pelo Tina. Sem isso, qualquer leitura (inclusive contra um CONTENT_REPO_URL
+// que nao seja GitHub, ex: fixture local em teste) quebraria o processo
+// inteiro so por causa de uma dependencia que a leitura nem usa.
+function createLazyGitHubProvider(): GitProvider {
+  let real: GitHubProvider | undefined;
+  const get = () => {
+    if (!real) {
+      real = new GitHubProvider({
+        ...parseGitHubRepoUrl(requireEnv('CONTENT_REPO_URL')),
+        token: requireEnv('CONTENT_REPO_TOKEN'),
+        branch: process.env.CONTENT_REPO_BRANCH || 'main',
+      });
+    }
+    return real;
+  };
+  return {
+    onPut: (key, value) => get().onPut(key, value),
+    onDelete: (key) => get().onDelete(key),
+  };
+}
+
 const isLocal = process.env.TINA_PUBLIC_IS_LOCAL === 'true';
 
 export default isLocal
@@ -25,17 +57,5 @@ export default isLocal
       databaseAdapter: new SqliteLevel({
         filename: process.env.TINA_SQLITE_PATH || '/app/data/tina.sqlite',
       }),
-      gitProvider: new GitHubProvider({
-        ...parseGitHubRepoUrl(requireEnv('CONTENT_REPO_URL')),
-        token: requireEnv('CONTENT_REPO_TOKEN'),
-        branch: process.env.CONTENT_REPO_BRANCH || 'main',
-      }),
+      gitProvider: createLazyGitHubProvider(),
     });
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} nao definida — obrigatoria pro backend do Tina. Ver .env.example.`);
-  }
-  return value;
-}

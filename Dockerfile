@@ -20,7 +20,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # full Node/Astro toolchain *and* nginx together, instead of splitting
 # build/serve across stages the way a content-baked-in image would.
 FROM base AS server
-RUN apk add --no-cache nginx git bash
+RUN apk add --no-cache nginx git
 COPY . .
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
