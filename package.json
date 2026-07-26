@@ -1,7 +1,7 @@
 {
   "name": "brand-engine",
   "type": "module",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Template Astro agnóstico de marca (AEO/SEO), empacotado como imagem Docker única que clona e serve o conteúdo de uma marca em runtime.",
   "files": [
     "src",
@@ -15,6 +15,7 @@
     "Dockerfile",
     "entrypoint.sh",
     "docker-compose.yml",
+    "docker-compose.example.yml",
     "nginx.conf",
     ".dockerignore",
     ".env.example"
@@ -25,6 +26,7 @@
   "scripts": {
     "predev": "node scripts/ensure-example-content.mjs",
     "dev": "astro dev",
+    "check": "astro check",
     "check:theme": "node scripts/check-theme-leak.mjs",
     "llms-txt": "node scripts/generate-llms-txt.mjs",
     "prebuild": "node scripts/ensure-example-content.mjs && npm run llms-txt",

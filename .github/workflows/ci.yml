@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+# Evita duas execuções do mesmo branch/PR rodando (e publicando) em paralelo
+# se um push novo chegar antes da anterior terminar.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gate: typecheck + build do Astro (contra o conteúdo de exemplo, via
+  # predev/prebuild — ver package.json) rodam em TODO push/PR. Publicar a
+  # imagem depende deste job (ver "needs" abaixo) — um erro aqui nunca
+  # publica uma tag nova do brand-engine.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Build (conteúdo de exemplo)
+        run: npm run build
+
+      - name: Build da imagem Docker (sem publicar)
+        run: docker build --target server -t brand-engine:ci-check .
+
+  # Publica ghcr.io/<owner>/brand-engine só em push pro main (tag "latest",
+  # rastreável por marca via rollback pro sha anterior se precisar) ou numa
+  # tag "vX.Y.Z" (tags semver — o mecanismo de update/rollback por marca
+  # descrito no README depende de tags fixas existirem de verdade).
+  publish:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Nome da imagem (owner em minúsculas — GHCR exige)
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/brand-engine" >> "$GITHUB_OUTPUT"
+
+      - name: Metadados/tags da imagem
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build e push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: server
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

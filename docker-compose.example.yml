@@ -1,0 +1,53 @@
+# Referência de deploy pra uma instância de marca usando a imagem publicada
+# (ghcr.io/coutodev/brand-engine) — não o build local (ver docker-compose.yml
+# deste template, usado só em dev). Copie este arquivo pro repositório da
+# marca (junto com o `.env` dela) e rode a partir dele.
+#
+# Atualizar o template: troque a tag da imagem abaixo e rode
+#   docker compose pull && docker compose up -d
+# Uma marca específica pode ficar presa numa tag anterior (não seguir
+# "latest") se um update quebrar algo só pra ela — ver README, "Atualizar o
+# template".
+services:
+  web:
+    image: ghcr.io/coutodev/brand-engine:latest
+    env_file:
+      - .env
+    ports:
+      - "${WEB_PORT:-8080}:80"
+      - "${TINA_PORT:-4001}:4001"
+    networks:
+      - edge
+    volumes:
+      - data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.entrypoints=websecure"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}.service=${BRAND_SLUG:-brand}-web"
+      - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=80"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/tina`))"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.entrypoints=websecure"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.priority=10"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.service=${BRAND_SLUG:-brand}-tina"
+      - "traefik.http.services.${BRAND_SLUG:-brand}-tina.loadbalancer.server.port=4001"
+    # Ver docker-compose.yml (deste template) pro raciocínio por trás destes
+    # números — pico do `astro build` no boot + backend do Tina em regime.
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
+    restart: unless-stopped
+
+volumes:
+  data:
+
+# Rede compartilhada com o Traefik da VPS — precisa existir antes do
+# primeiro `docker compose up` (uma única vez por VPS, não por marca):
+#   docker network create edge
+networks:
+  edge:
+    external: true

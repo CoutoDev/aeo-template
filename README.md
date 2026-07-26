@@ -160,15 +160,34 @@ Importante: `docker-compose.yml` referencia a rede `edge` como
 Traefik. Crie-a uma única vez por VPS, no passo acima. Com ou sem o proxy, o
 acesso direto via `WEB_PORT` continua funcionando.
 
+## Imagem publicada (CI/CD)
+
+`.github/workflows/ci.yml` builda e publica `ghcr.io/coutodev/brand-engine`:
+
+- Em todo push/PR, roda o gate (`npm run check`, `npm run build` contra o
+  conteúdo de exemplo, `docker build` da imagem) — publicar depende deste
+  job passar.
+- Em push pro `main`, publica a tag `latest` (+ a tag `sha-<commit>`, sempre,
+  pra rollback preciso mesmo sem uma tag semver).
+- Em push de uma tag `vX.Y.Z`, publica `X.Y.Z` e `X.Y` além de `sha-<commit>`.
+
+Uma instância de marca **não** usa este `docker-compose.yml` (esse é só pra
+dev do template, com `build:` local) — usa
+[`docker-compose.example.yml`](docker-compose.example.yml), que referencia a
+imagem publicada (`image: ghcr.io/coutodev/brand-engine:...`). Copie esse
+arquivo pro repositório/servidor da marca junto com o `.env` dela.
+
 ## Atualizar o template
 
-Publicar uma nova tag da imagem `brand-engine` e reiniciar a instância
-(`docker compose pull && docker compose --profile prod up -d`) já é
-suficiente — o carimbo de build compara a versão do template junto com o
-commit de conteúdo, então uma imagem nova sempre reconstrói mesmo que o
-conteúdo da marca não tenha mudado. Uma marca específica pode ficar presa
-numa tag anterior (fixando `image:` no `docker-compose.yml` dela) se um
-update quebrar algo só pra ela.
+Trocar a tag da imagem no `docker-compose.example.yml` da marca (ex: de
+`latest` pra uma versão fixa, ou de uma versão pra outra) e rodar
+`docker compose pull && docker compose up -d` já é suficiente — o carimbo de
+build compara a versão do template junto com o commit de conteúdo, então uma
+imagem nova sempre reconstrói mesmo que o conteúdo da marca não tenha
+mudado. Uma marca específica pode ficar presa numa tag anterior (fixando
+`image:` nela) se um update quebrar algo só pra ela — sempre existe uma tag
+`sha-<commit>` publicada, então dá pra fixar numa versão exata mesmo sem uma
+tag semver correspondente.
 
 ## Documentação
 
