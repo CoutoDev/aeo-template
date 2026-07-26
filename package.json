@@ -1,7 +1,7 @@
 {
   "name": "create-brand-site",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Template Astro agnóstico de marca (AEO/SEO) com CLI scaffolder para gerar uma instância por marca.",
   "bin": {
     "create-brand-site": "./cli/create-brand-site.mjs"
