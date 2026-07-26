@@ -30,7 +30,35 @@ Se um build falhar (ex: um commit de conteúdo com frontmatter inválido), a
 instância continua no ar servindo o último build válido, e tenta de novo no
 próximo boot — um commit quebrado não derruba o site.
 
-## Rodar uma instância
+## Provisionar uma marca nova
+
+Passos únicos ao lançar uma marca (não se repetem em updates — ver
+"Atualizar o template" abaixo):
+
+1. **Repositório de conteúdo**: crie um repositório GitHub novo pra marca e
+   comece a partir de
+   [`templates/brand-content-example/`](templates/brand-content-example) —
+   copie `pages/`, `faq/`, `posts/` pra **raiz** desse repo novo (não
+   aninhado em `src/content/`; é assim que o backend do Tina espera, ver
+   `tina/schema.ts`).
+2. **Token do GitHub**: gere um fine-grained Personal Access Token (ou deploy
+   key) com escopo restrito a esse repositório único, permissão de
+   leitura+escrita em "Contents" — nunca um token amplo de organização (ver
+   `CONTENT_REPO_TOKEN` em `.env.example`). Só é necessário se a marca vai
+   editar pelo `/admin`; clone/leitura funcionam sem ele.
+3. **Senha do `/admin`**: gere o hash com
+   `node scripts/hash-tina-password.mjs "senha-da-marca"` e preencha
+   `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no passo seguinte.
+4. **`.env`**: `cp .env.example .env` e preencha `SITE_*`, `DOMAIN`,
+   `BRAND_SLUG`, `CONTENT_REPO_URL` (+ `CONTENT_REPO_TOKEN` se for usar o
+   `/admin`), `TINA_ADMIN_*`.
+5. **Suba a instância**: no repositório/servidor da marca (não neste
+   template), use [`docker-compose.example.yml`](docker-compose.example.yml)
+   como `docker-compose.yml` e rode `docker compose up -d`. O primeiro boot
+   roda o `astro build` completo (mais lento que os restarts seguintes — ver
+   "Como uma instância sobe" acima).
+
+## Rodar uma instância (dev deste template)
 
 ```bash
 cp .env.example .env   # preencher SITE_*, CONTENT_REPO_URL, etc.
@@ -188,6 +216,14 @@ mudado. Uma marca específica pode ficar presa numa tag anterior (fixando
 `image:` nela) se um update quebrar algo só pra ela — sempre existe uma tag
 `sha-<commit>` publicada, então dá pra fixar numa versão exata mesmo sem uma
 tag semver correspondente.
+
+**Rollback** de uma marca (voltar pra tag anterior, ex: `v0.4.0` quebrou algo
+que `v0.5.0` não tinha): edite `image:` no `docker-compose.yml` dessa marca
+pra tag anterior (ou `sha-<commit-anterior>`, achado nos runs do
+`ci.yml`/nos pacotes do GHCR) e rode `docker compose up -d` de novo — o
+volume `data` (conteúdo clonado, banco do Tina) sobrevive à troca, só o
+código do template muda. Não afeta as outras marcas: cada uma tem seu
+próprio `docker-compose.yml`/tag de imagem.
 
 ## Documentação
 
