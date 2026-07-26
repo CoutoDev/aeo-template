@@ -28,6 +28,14 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      # node:22 vem com npm 10, que resolve os fallbacks wasm32 opcionais
+      # (@rolldown/binding-wasm32-wasi, @bruits/satteri-wasm32-wasi -> @emnapi/*)
+      # de um jeito que nem sempre bate com o próprio lockfile que ele acabou
+      # de gerar (confirmado: "npm install && npm ci" sob npm 10 falha nessa
+      # árvore). O lockfile deste repo é gerado com npm 11 — pin aqui pra
+      # "npm ci" validar contra a mesma versão que escreveu o lockfile.
+      - run: npm install -g npm@11.6.2
+
       - run: npm ci
 
       - name: Typecheck

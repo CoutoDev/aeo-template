@@ -4,7 +4,12 @@
 FROM node:22-alpine AS base
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install
+# npm@11 pin: ver comentário equivalente em ci.yml — node:22-alpine vem com
+# npm 10, que não resolve de forma estável os fallbacks wasm32 opcionais
+# desta árvore de deps. "npm ci" (não "npm install") pra a imagem publicada
+# refletir exatamente o lockfile validado no CI, não o que o registry serve
+# no momento do build.
+RUN npm install -g npm@11.6.2 && npm ci
 
 # ---- Development ----
 # Runs `astro dev` with hot-reload; source code is bind-mounted via docker-compose.
