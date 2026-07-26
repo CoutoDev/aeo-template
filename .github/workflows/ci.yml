@@ -43,6 +43,14 @@ jobs:
 
       - name: Build (conteúdo de exemplo)
         run: npm run build
+        # generate-llms-txt.mjs (rodado via prebuild) exige essas vars — em
+        # produção vêm do .env real da instância (ver entrypoint.sh); aqui
+        # só precisam de qualquer valor não-vazio pro build de exemplo
+        # passar. Mesmos placeholders do .env.example.
+        env:
+          SITE_NAME: "Nome da Marca"
+          SITE_URL: "https://minhamarca.example.com"
+          SITE_DESCRIPTION: "Descrição curta da marca (1-2 frases), usada no schema.org Organization e no llms.txt."
 
       - name: Build da imagem Docker (sem publicar)
         run: docker build --target server -t brand-engine:ci-check .
