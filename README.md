@@ -190,7 +190,7 @@ acesso direto via `WEB_PORT` continua funcionando.
 
 ## Imagem publicada (CI/CD)
 
-`.github/workflows/ci.yml` builda e publica `ghcr.io/coutodev/brand-engine`:
+`.github/workflows/ci.yml` builda e publica `ghcr.io/brand-engine/brand-engine`:
 
 - Em todo push/PR, roda o gate (`npm run check`, `npm run build` contra o
   conteúdo de exemplo, `docker build` da imagem) — publicar depende deste
@@ -202,7 +202,7 @@ acesso direto via `WEB_PORT` continua funcionando.
 Uma instância de marca **não** usa este `docker-compose.yml` (esse é só pra
 dev do template, com `build:` local) — usa
 [`docker-compose.example.yml`](docker-compose.example.yml), que referencia a
-imagem publicada (`image: ghcr.io/coutodev/brand-engine:...`). Copie esse
+imagem publicada (`image: ghcr.io/brand-engine/brand-engine:...`). Copie esse
 arquivo pro repositório/servidor da marca junto com o `.env` dela.
 
 ## Atualizar o template

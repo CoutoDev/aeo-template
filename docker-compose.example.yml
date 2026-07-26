@@ -1,5 +1,5 @@
 # Referência de deploy pra uma instância de marca usando a imagem publicada
-# (ghcr.io/coutodev/brand-engine) — não o build local (ver docker-compose.yml
+# (ghcr.io/brand-engine/brand-engine) — não o build local (ver docker-compose.yml
 # deste template, usado só em dev). Copie este arquivo pro repositório da
 # marca (junto com o `.env` dela) e rode a partir dele.
 #
@@ -11,8 +11,8 @@ services:
     # Fixe numa tag concreta (versão ou "sha-<commit>") por marca — "latest"
     # move a marca a cada push pro main (ver ci.yml) e torna rollback
     # impossível sem editar isto primeiro. Publicadas em
-    # https://github.com/CoutoDev/aeo-template/pkgs/container/brand-engine.
-    image: ghcr.io/coutodev/brand-engine:0.5.2
+    # https://github.com/brand-engine/pkgs/container/brand-engine.
+    image: ghcr.io/brand-engine/brand-engine:0.5.2
     env_file:
       - .env
     ports:
