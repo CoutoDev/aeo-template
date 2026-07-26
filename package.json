@@ -1,34 +1,32 @@
 {
-  "name": "create-brand-site",
+  "name": "brand-engine",
   "type": "module",
-  "version": "0.1.0",
-  "description": "Template Astro agnóstico de marca (AEO/SEO) com CLI scaffolder para gerar uma instância por marca.",
-  "bin": {
-    "create-brand-site": "./cli/create-brand-site.mjs"
-  },
+  "version": "0.2.0",
+  "description": "Template Astro agnóstico de marca (AEO/SEO), empacotado como imagem Docker única que clona e serve o conteúdo de uma marca em runtime.",
   "files": [
-    "cli",
     "src",
     "public",
     "scripts",
+    "templates",
     "traefik",
     "astro.config.mjs",
     "tsconfig.json",
     "Dockerfile",
+    "entrypoint.sh",
     "docker-compose.yml",
     "nginx.conf",
     ".dockerignore",
-    ".env.example",
-    "template.manifest.json"
+    ".env.example"
   ],
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
+    "predev": "node scripts/ensure-example-content.mjs",
     "dev": "astro dev",
     "check:theme": "node scripts/check-theme-leak.mjs",
     "llms-txt": "node scripts/generate-llms-txt.mjs",
-    "prebuild": "npm run llms-txt",
+    "prebuild": "node scripts/ensure-example-content.mjs && npm run llms-txt",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

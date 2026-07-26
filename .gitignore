@@ -3,6 +3,11 @@ dist/
 # generated types
 .astro/
 
+# symlink de dev pra templates/brand-content-example, criado por
+# scripts/ensure-example-content.mjs (ver README) — conteúdo de marca real
+# nunca vive aqui, é clonado em runtime (ver entrypoint.sh)
+/src/content
+
 # dependencies
 node_modules/
 

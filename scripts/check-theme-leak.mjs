@@ -4,7 +4,7 @@
 // src/lib/brand-presets.ts (presets do design system, incluindo o que serve
 // de tema padrão), chegando nos componentes como var(--token) — nunca
 // literal em componente/CSS. Por isso o src/lib/ inteiro fica de fora do
-// scan. Ver template.manifest.json.
+// scan. Cor de marca sempre vem de env var, nunca hardcoded em componente.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,7 +45,7 @@ if (violations.length > 0) {
     console.error(`  ${violation.file}:${violation.line} — ${violation.matches.join(', ')}`);
   }
   console.error(
-    '\nCores de marca devem vir de THEME_* (.env) via src/lib/brand.ts e ser consumidas como var(--token). Ver template.manifest.json.'
+    '\nCores de marca devem vir de THEME_* (.env) via src/lib/brand.ts e ser consumidas como var(--token).'
   );
   process.exit(1);
 }
