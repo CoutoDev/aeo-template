@@ -57,7 +57,16 @@ git clone --depth 1 --quiet "$CONTENT_REPO_URL" "$CONTENT_DIR"
 # codigo do template mudou — se o carimbo comparasse só o sha do conteudo,
 # uma atualização de template com o MESMO conteúdo pularia o build e
 # continuaria servindo o dist antigo, da imagem anterior, silenciosamente.
-TEMPLATE_VERSION=$(grep -m1 '"version"' "$APP_DIR/package.json" | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+#
+# TEMPLATE_BUILD_ID (setado no Dockerfile a partir do --build-arg do CI, ver
+# .github/workflows/ci.yml) em vez de so a "version" do package.json: o CI
+# publica "latest"/"sha-<commit>" a cada push pro main, a maioria sem bump
+# de versao — comparar só a version faria um rollback pra uma tag anterior
+# COM A MESMA version parecer "sem mudança" e pular o build, servindo o dist
+# da imagem nova em vez da antiga (o exato problema que rollback existe pra
+# resolver). Cai pra "version" se a imagem foi buildada sem o build-arg (ex:
+# "docker build" local, sem passar por CI).
+TEMPLATE_VERSION="${TEMPLATE_BUILD_ID:-$(grep -m1 '"version"' "$APP_DIR/package.json" | sed -E 's/.*"version": *"([^"]+)".*/\1/')}"
 CURRENT_SHA=$(git -C "$CONTENT_DIR" rev-parse HEAD)
 CURRENT_STAMP="${CURRENT_SHA}:${TEMPLATE_VERSION}"
 BUILT_STAMP=""

@@ -85,5 +85,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # TEMPLATE_BUILD_ID: identidade única por commit pro carimbo de
+          # rebuild do entrypoint.sh — sem isso, "latest"/tags sha (que saem
+          # em TODO push pro main, não só em bumps de version) podem não
+          # disparar rebuild nenhum contra um volume existente. Ver
+          # comentário em entrypoint.sh e Dockerfile.
+          build-args: |
+            TEMPLATE_BUILD_ID=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

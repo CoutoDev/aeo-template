@@ -25,6 +25,17 @@ COPY . .
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+# CI publica "latest"/"sha-<commit>" em TODO push pro main (ver
+# .github/workflows/ci.yml), a maioria sem bump de package.json "version" —
+# sem isso, o carimbo de build (entrypoint.sh) so muda quando ALGUEM lembra
+# de bumpar a versão, e um rollback pra uma tag anterior com a MESMA versão
+# no package.json não dispara rebuild nenhum: o site continua servindo o
+# dist da imagem nova (confirmado: é exatamente o bug que rollback existe
+# pra resolver). TEMPLATE_BUILD_ID (default: a própria "version", pra
+# "docker build" local sem o --build-arg continuar funcionando como antes)
+# da à imagem uma identidade única por commit, não por bump manual.
+ARG TEMPLATE_BUILD_ID
+ENV TEMPLATE_BUILD_ID=${TEMPLATE_BUILD_ID}
 # Schema do Tina (tina/schema.ts) e template-owned, nao depende de conteudo
 # de marca nenhuma — gerar aqui, uma vez por imagem, em vez de a cada boot
 # de container. TINA_PUBLIC_IS_LOCAL=true (dentro do script "tina:build")

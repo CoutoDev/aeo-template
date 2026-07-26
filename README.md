@@ -210,12 +210,14 @@ arquivo pro repositório/servidor da marca junto com o `.env` dela.
 Trocar a tag da imagem no `docker-compose.example.yml` da marca (ex: de
 `latest` pra uma versão fixa, ou de uma versão pra outra) e rodar
 `docker compose pull && docker compose up -d` já é suficiente — o carimbo de
-build compara a versão do template junto com o commit de conteúdo, então uma
-imagem nova sempre reconstrói mesmo que o conteúdo da marca não tenha
-mudado. Uma marca específica pode ficar presa numa tag anterior (fixando
-`image:` nela) se um update quebrar algo só pra ela — sempre existe uma tag
-`sha-<commit>` publicada, então dá pra fixar numa versão exata mesmo sem uma
-tag semver correspondente.
+build compara o commit de conteúdo junto com a identidade da imagem
+(`TEMPLATE_BUILD_ID`, o sha do commit que o CI usou pra publicar — ver
+`ci.yml`/`Dockerfile` — não a `version` do `package.json`, que nem sempre
+muda entre publicações), então trocar de imagem sempre reconstrói mesmo que
+o conteúdo da marca não tenha mudado. Uma marca específica pode ficar presa
+numa tag anterior (fixando `image:` nela) se um update quebrar algo só pra
+ela — sempre existe uma tag `sha-<commit>` publicada, então dá pra fixar
+numa versão exata mesmo sem uma tag semver correspondente.
 
 **Rollback** de uma marca (voltar pra tag anterior, ex: `v0.4.0` quebrou algo
 que `v0.5.0` não tinha): edite `image:` no `docker-compose.yml` dessa marca
