@@ -22,8 +22,9 @@ require_env() {
   fi
 }
 
-# CONTENT_REPO_TOKEN nao entra aqui: so e exigido na primeira escrita real
-# pelo Tina (ver tina/database.ts), nao pra ler/servir o site.
+# CONTENT_REPO_TOKEN nao entra aqui: e opcional pro clone (so exigido de
+# fato se CONTENT_REPO_URL for um repositorio privado — ver clone abaixo) e
+# obrigatorio na primeira escrita real pelo Tina (ver tina/database.ts).
 for var in SITE_NAME SITE_URL SITE_DESCRIPTION BRAND_SLUG CONTENT_REPO_URL \
   TINA_ADMIN_USER TINA_ADMIN_PASSWORD_HASH; do
   require_env "$var"
@@ -50,7 +51,18 @@ mkdir -p "$DATA_DIR"
 # qualquer estado estranho deixado por uma execucao anterior.
 log "Clonando conteudo da marca em $CONTENT_DIR..."
 rm -rf "$CONTENT_DIR"
-git clone --depth 1 --quiet "$CONTENT_REPO_URL" "$CONTENT_DIR"
+if [ -n "${CONTENT_REPO_TOKEN:-}" ]; then
+  # Repo privado: autentica via header HTTP (mesmo esquema do actions/checkout),
+  # nunca embutindo o token na URL — isso vazaria em `ps` e no
+  # remote.origin.url gravado em $CONTENT_DIR/.git/config. Passado com "-c"
+  # (so pra este comando), entao nao sobrevive no config do clone resultante.
+  # Repo publico com token setado (marca so usa /admin) continua funcionando
+  # normalmente: o header extra e apenas ignorado pelo GitHub nesse caso.
+  auth_header="Authorization: Basic $(printf 'x-access-token:%s' "$CONTENT_REPO_TOKEN" | base64 | tr -d '\n')"
+  git -c http.extraHeader="$auth_header" clone --depth 1 --quiet "$CONTENT_REPO_URL" "$CONTENT_DIR"
+else
+  git clone --depth 1 --quiet "$CONTENT_REPO_URL" "$CONTENT_DIR"
+fi
 
 # O carimbo precisa identificar conteudo + versao do template juntos: numa
 # troca de imagem (nova tag do brand-engine), o volume /data sobrevive mas o

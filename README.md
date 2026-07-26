@@ -44,14 +44,16 @@ Passos únicos ao lançar uma marca (não se repetem em updates — ver
 2. **Token do GitHub**: gere um fine-grained Personal Access Token (ou deploy
    key) com escopo restrito a esse repositório único, permissão de
    leitura+escrita em "Contents" — nunca um token amplo de organização (ver
-   `CONTENT_REPO_TOKEN` em `.env.example`). Só é necessário se a marca vai
-   editar pelo `/admin`; clone/leitura funcionam sem ele.
+   `CONTENT_REPO_TOKEN` em `.env.example`). Necessário se o repositório de
+   conteúdo for privado (o `entrypoint.sh` usa o token pra autenticar o
+   clone) ou se a marca vai editar pelo `/admin`; repo público + `/admin`
+   desativado funcionam sem ele.
 3. **Senha do `/admin`**: gere o hash com
    `node tina/scripts/hash-tina-password.mjs "senha-da-marca"` e preencha
    `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no passo seguinte.
 4. **`.env`**: `cp .env.example .env` e preencha `SITE_*`, `DOMAIN`,
-   `BRAND_SLUG`, `CONTENT_REPO_URL` (+ `CONTENT_REPO_TOKEN` se for usar o
-   `/admin`), `TINA_ADMIN_*`.
+   `BRAND_SLUG`, `CONTENT_REPO_URL` (+ `CONTENT_REPO_TOKEN` se o repo for
+   privado ou for usar o `/admin`), `TINA_ADMIN_*`.
 5. **Suba a instância**: no repositório/servidor da marca (não neste
    template), use [`docker-compose.example.yml`](docker-compose.example.yml)
    como `docker-compose.yml` e rode `docker compose up -d`. O primeiro boot
