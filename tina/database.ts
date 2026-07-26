@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { createDatabase, createLocalDatabase, FilesystemBridge } from '@tinacms/datalayer';
 import type { GitProvider } from '@tinacms/datalayer';
 import { GitHubProvider } from 'tinacms-gitprovider-github';
@@ -50,10 +51,20 @@ function createLazyGitHubProvider(): GitProvider {
 
 const isLocal = process.env.TINA_PUBLIC_IS_LOCAL === 'true';
 
+// CONTENT_DIR: raiz do clone do repo de conteudo da marca (ver
+// entrypoint.sh), NAO src/content (symlink que só existe pro Astro ler).
+// FilesystemBridge resolve tudo que NÃO é tina/__generated__/* contra
+// outputPath — se fosse só rootPath (cwd, /app), o path das collections
+// ('pages'/'faq'/'posts' em schema.ts) resolveria contra /app/pages em vez
+// de /app/data/content/pages, e a mesma chave ('pages/home.md') que vai pro
+// gitProvider.onPut ficaria certa só por coincidência de nome, não porque o
+// bridge local realmente escreveu no lugar certo.
+const contentDir = process.env.CONTENT_DIR || path.join(process.cwd(), 'src/content');
+
 export default isLocal
   ? createLocalDatabase()
   : createDatabase({
-      bridge: new FilesystemBridge(process.cwd()),
+      bridge: new FilesystemBridge(process.cwd(), contentDir),
       databaseAdapter: new SqliteLevel({
         filename: process.env.TINA_SQLITE_PATH || '/app/data/tina.sqlite',
       }),

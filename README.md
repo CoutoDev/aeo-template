@@ -101,6 +101,39 @@ O schema/admin UI (`tina/__generated__/`, `public/admin/`) é gerado uma vez
 na imagem (`npm run tina:build`, ver `Dockerfile`) — não depende de conteúdo
 de marca, só do schema, então não roda a cada boot de container.
 
+### Escrita (editar pelo `/admin`)
+
+Uma edição salva pelo `/admin` grava o Markdown localmente (no mesmo
+`CONTENT_DIR` que o clone da marca) e, via `CONTENT_REPO_TOKEN`, comita e
+empurra o commit direto pro `CONTENT_REPO_URL` pela API do GitHub — não é
+git local (clone/push), é `GitHubProvider.onPut`/`onDelete` da REST API.
+
+A publicação **não é instantânea**: como decidido para este modelo (ver
+"Atualizar o template" abaixo), o site servido só reflete uma edição no
+próximo boot do container, quando `entrypoint.sh` clona de novo e vê um HEAD
+diferente. Reiniciar a instância (`docker compose --profile prod up -d`)
+depois de editar é o mecanismo de publicação — não existe rebuild automático
+disparado pela própria escrita.
+
+**Upload de imagem pelo `/admin` ainda não está implementado.** `tina/server.mjs`
+usa `TinaNodeBackend`, que só expõe a rota `/gql` — não tem endpoint de mídia.
+Por isso `hero`/`cover` em `tina/schema.ts` são campos de texto (caminho
+relativo ao `.md`, ex: `./home-hero.jpg`), não campo de imagem com upload:
+o editor referencia um arquivo já commitado no repo de conteúdo, do mesmo
+jeito que funciona hoje sem Tina nenhum. Um media store customizado (upload
+gravando dentro do próprio repo de conteúdo, mantendo compatibilidade com
+`astro:assets`) fica como trabalho futuro.
+
+**Campos opcionais vazios**: um campo deixado em branco no formulário grava
+`null` no frontmatter (não omite a chave) — `src/content.config.ts` trata
+isso normalizando `null` pra "ausente" antes da validação, então o build não
+quebra e o `.default(...)` do zod continua funcionando. Exceção: `updatedDate`
+(post) não é editável pelo `/admin` de propósito — é o único campo de data
+opcional do schema, e `@tinacms/graphql` serializa uma data vazia como
+`1970-01-01` (bug upstream: `new Date(null)` vira epoch, e passa validação
+sem erro por ser uma data "válida", só errada). Continua editável direto no
+Markdown/git se precisar.
+
 ## Múltiplas marcas na mesma VPS
 
 Cada instância já roda isolada em container. Para dar a cada marca um domínio

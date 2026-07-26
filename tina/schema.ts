@@ -20,18 +20,21 @@ export const tinaConfig = {
     // com "Cannot read properties of undefined (reading 'exec')".
     externalDependencies: ['sqlite-level', 'better-sqlite3', 'abstract-level'],
   },
-  media: {
-    tina: {
-      publicFolder: 'public',
-      mediaRoot: 'uploads',
-    },
-  },
+  // Sem bloco "media": TinaNodeBackend (tina/server.mjs) só expõe a rota
+  // /gql, sem endpoint de upload — configurar media.tina aqui ligaria o
+  // botão "Media Manager" na UI sem um backend funcional atrás dele. Upload
+  // de imagem fica fora do escopo por ora (ver 'hero'/'cover' abaixo, e o
+  // README) — editor referencia arquivos já commitados no repo de conteúdo.
   schema: {
     collections: [
       {
         name: 'pages',
         label: 'Páginas',
-        path: 'src/content/pages',
+        // Relativo à raiz do repositorio de CONTEUDO (CONTENT_DIR), não do
+        // template — ver o outputPath do FilesystemBridge em database.ts.
+        // O repo de uma marca tem pages/, faq/, posts/ na raiz (mesmo layout
+        // de templates/brand-content-example/), nao aninhado em src/content.
+        path: 'pages',
         format: 'md',
         fields: [
           { type: 'string', name: 'eyebrow', label: 'Eyebrow' },
@@ -54,7 +57,12 @@ export const tinaConfig = {
               { type: 'string', name: 'value', label: 'Valor', required: true },
             ],
           },
-          { type: 'image', name: 'hero', label: 'Imagem de hero' },
+          // 'string', não 'image': TinaNodeBackend (tina/server.mjs) só expõe
+          // a rota /gql, sem endpoint de upload de mídia — o widget de imagem
+          // do Tina dependeria de um media store que não existe aqui. Editor
+          // digita o caminho relativo ao .md (ex: ./home-hero.jpg), igual ao
+          // que já funciona hoje via git — ver image() em content.config.ts.
+          { type: 'string', name: 'hero', label: 'Imagem de hero (caminho relativo, ex: ./home-hero.jpg)' },
           { type: 'string', name: 'heroAlt', label: 'Texto alternativo do hero' },
           { type: 'rich-text', name: 'body', label: 'Conteúdo', isBody: true },
         ],
@@ -62,7 +70,7 @@ export const tinaConfig = {
       {
         name: 'faq',
         label: 'Perguntas frequentes',
-        path: 'src/content/faq',
+        path: 'faq',
         format: 'md',
         fields: [
           { type: 'string', name: 'question', label: 'Pergunta', required: true },
@@ -80,7 +88,7 @@ export const tinaConfig = {
       {
         name: 'posts',
         label: 'Jornal (artigos)',
-        path: 'src/content/posts',
+        path: 'posts',
         format: 'md',
         fields: [
           { type: 'string', name: 'title', label: 'Título', required: true },
@@ -92,10 +100,19 @@ export const tinaConfig = {
             ui: { component: 'textarea' },
           },
           { type: 'datetime', name: 'publishDate', label: 'Data de publicação', required: true },
-          { type: 'datetime', name: 'updatedDate', label: 'Data de atualização' },
+          // Sem 'updatedDate' aqui de proposito: e o UNICO campo datetime
+          // opcional do schema (publishDate e obrigatorio, o form nunca
+          // manda vazio), e @tinacms/graphql tem um bug real na serialização
+          // — resolveDateInput faz "new Date(null)", que o JS trata como
+          // epoch (1970-01-01), e o date-fns considera "valida" — confirmado
+          // testando um mutation completo com o campo vazio. Resultado seria
+          // corrupção silenciosa (nenhum erro, so a data errada gravada no
+          // repo da marca), não algo pra expor no /admin sem correção
+          // upstream. Continua editável direto no arquivo/git se precisar.
           { type: 'string', name: 'author', label: 'Autor' },
           { type: 'string', name: 'tags', label: 'Tags', list: true },
-          { type: 'image', name: 'cover', label: 'Capa' },
+          // Ver comentário equivalente em 'hero' acima.
+          { type: 'string', name: 'cover', label: 'Capa (caminho relativo, ex: ./artigo-1-cover.jpg)' },
           { type: 'string', name: 'coverAlt', label: 'Texto alternativo da capa' },
           { type: 'rich-text', name: 'body', label: 'Conteúdo', isBody: true },
         ],

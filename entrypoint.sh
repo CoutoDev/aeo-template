@@ -104,7 +104,9 @@ log "Subindo backend do Tina..."
 # Chama o binario direto (nao "npm run tina:server"): "npm run" interpoe um
 # processo wrapper, entao $! capturaria o PID do npm, nao do processo real —
 # e "wait" abaixo nunca notaria o backend do Tina caindo de verdade.
-TINA_SQLITE_PATH="${TINA_SQLITE_PATH:-$DATA_DIR/tina.sqlite}" "$APP_DIR/node_modules/.bin/tsx" "$APP_DIR/tina/server.mjs" &
+CONTENT_DIR="$CONTENT_DIR" \
+  TINA_SQLITE_PATH="${TINA_SQLITE_PATH:-$DATA_DIR/tina.sqlite}" \
+  "$APP_DIR/node_modules/.bin/tsx" "$APP_DIR/tina/server.mjs" &
 TINA_PID=$!
 
 log "Subindo nginx..."
@@ -116,7 +118,33 @@ NGINX_PID=$!
 # filhos — nginx sozinho como PID 1 nao faz esse papel de init, o que deixa
 # processos zumbis pra tras e quebra a deteccao de queda do backend do Tina
 # abaixo (confirmado testando).
-trap 'kill $TINA_PID $NGINX_PID 2>/dev/null' TERM INT
+#
+# shutting_down + "|| true": sem a flag, um "docker stop" so seria notado na
+# proxima vez que o loop abaixo acordasse do "sleep 1" (ate 1s de atraso, OK)
+# — mas se o Tina ja tivesse caido antes, "kill $TINA_PID" aqui falha (ESRCH)
+# e, com "set -e" ativo no momento em que o trap dispara, abortaria o script
+# com o status generico do kill em vez de seguir pro "wait $NGINX_PID" e
+# reportar o exit code real do nginx (mesma classe de bug do "kill" no final
+# do script, ver comentario la embaixo). Confirmado testando com "docker
+# stop": sem isso, o container so morria no timeout (SIGKILL, exit 137) em
+# vez de sair logo que o nginx atende o SIGTERM.
+shutting_down=0
+trap 'shutting_down=1; kill $TINA_PID $NGINX_PID 2>/dev/null || true' TERM INT
+
+# "wait" so funciona pro pai DIRETO de um processo (regra do proprio
+# waitpid(2), nao so do shell) — colocar o "wait $TINA_PID" numa subshell
+# em background (padrao anterior, "( wait ... ) &") quebra silenciosamente:
+# a subshell e IRMA de TINA_PID, nao mae, entao esse wait falha na hora com
+# "not a child of this shell" (codigo 127 no ash/dash) em vez de bloquear
+# de verdade — confirmado testando: o aviso de queda aparecia ~2s depois de
+# TODO boot, mesmo com o Tina saudavel e respondendo normalmente. Por isso
+# os dois "wait" abaixo rodam os DOIS no processo principal (unico que e
+# pai de verdade de ambos), usando /proc pra descobrir quem morreu primeiro
+# sem bloquear no PID errado.
+is_running() {
+  [ -r "/proc/$1/status" ] || return 1
+  ! grep -q '^State:[[:space:]]*Z' "/proc/$1/status" 2>/dev/null
+}
 
 # Tina e nginx sao independentes de proposito: o site estatico e o que
 # precisa ficar no ar de verdade (mesma logica de "build quebrado nao
@@ -124,30 +152,43 @@ trap 'kill $TINA_PID $NGINX_PID 2>/dev/null' TERM INT
 # GitHub fora do ar, etc.), so a edicao fica indisponivel, o site publicado
 # continua servindo normalmente. So loga, nao mata nginx nem derruba o
 # container por causa disso.
-(
-  # set +e aqui dentro: "wait" de um processo morto por sinal retorna
-  # codigo != 0, e com "set -e" (herdado do script principal) a subshell
-  # sairia NESSA linha, pulando tudo abaixo (inclusive capturar $?) —
-  # confirmado testando, o log/arquivo nunca era escrito por causa disso.
-  set +e
-  wait "$TINA_PID"
-  tina_exit_code=$?
-  # Escreve num arquivo, nao só stdout: um `echo` de um subprocesso em
-  # background as vezes nao aparece em `docker logs` (timing da captura de
-  # stdout do container) — o arquivo fica disponivel mesmo assim pra
-  # inspecionar via `docker exec`/healthcheck.
-  echo "$(date -Iseconds) backend do Tina encerrou (codigo $tina_exit_code)" >> "$DATA_DIR/.tina-crashes.log"
-  log "AVISO: backend do Tina encerrou (codigo $tina_exit_code). O site estatico continua no ar; edicao via /admin fica indisponivel ate o proximo boot."
-) &
+#
+# "sleep 1" primeiro, so depois checa: o loop comeca a rodar logo apos os
+# "&" que sobem tina/nginx, antes de qualquer um dos dois processos ter
+# terminado de subir — checar is_running imediatamente arriscaria um falso
+# negativo (ainda sem /proc/$PID/status) e derrubaria o container achando
+# que o nginx morreu no proprio boot.
+tina_logged=0
+while [ "$shutting_down" -eq 0 ]; do
+  sleep 1
+  is_running "$NGINX_PID" || break
+  if [ "$tina_logged" -eq 0 ] && ! is_running "$TINA_PID"; then
+    set +e
+    wait "$TINA_PID"
+    tina_exit_code=$?
+    set -e
+    # Escreve num arquivo, nao só stdout: um `echo` de um subprocesso em
+    # background as vezes nao aparece em `docker logs` (timing da captura de
+    # stdout do container) — o arquivo fica disponivel mesmo assim pra
+    # inspecionar via `docker exec`/healthcheck.
+    echo "$(date -Iseconds) backend do Tina encerrou (codigo $tina_exit_code)" >> "$DATA_DIR/.tina-crashes.log"
+    log "AVISO: backend do Tina encerrou (codigo $tina_exit_code). O site estatico continua no ar; edicao via /admin fica indisponivel ate o proximo boot."
+    tina_logged=1
+  fi
+done
 
-# Bloqueia no nginx: se ELE cair, o script termina e o container sai (deixa
-# o restart policy do Docker reiniciar tudo) — um site fora do ar de
-# verdade nao deve ficar "meio no ar" silenciosamente. set +e pelo mesmo
-# motivo do bloco acima.
+# nginx morreu (saiu do loop acima): o script termina e o container sai
+# (deixa o restart policy do Docker reiniciar tudo) — um site fora do ar de
+# verdade nao deve ficar "meio no ar" silenciosamente.
 set +e
 wait "$NGINX_PID"
 exit_code=$?
 set -e
 log "nginx encerrou (codigo $exit_code), derrubando o container."
-kill "$TINA_PID" 2>/dev/null
+# "|| true": se o Tina ja tiver caido antes (caso comum — ver loop acima),
+# esse kill falha (ESRCH) e, com "set -e" ainda ativo aqui, abortaria o
+# script ANTES do "exit $exit_code" abaixo — o container sairia com o
+# status generico do kill (1) em vez do exit code real do nginx (confirmado
+# testando: nginx saindo com codigo 0 virava container "Exited (1)").
+kill "$TINA_PID" 2>/dev/null || true
 exit "$exit_code"
