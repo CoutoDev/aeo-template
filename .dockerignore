@@ -19,4 +19,4 @@ npm-debug.log*
 # conteudo da marca falhar por algum motivo, o build quebra alto
 # (getRequiredPage lanca erro) em vez de servir silenciosamente o conteudo
 # de exemplo empacotado na imagem.
-src/content
+astro/src/content

@@ -3,7 +3,7 @@
 Template Astro agnóstico de marca, focado em AEO/SEO (JSON-LD, `llms.txt`,
 respostas diretas extraíveis por agentes/LLMs). A identidade de cada marca
 (nome, domínio, descrição, cores) vem de variáveis de ambiente; o conteúdo
-longo (hero, "sobre", FAQ, posts) vive como Markdown em `src/content/`.
+longo (hero, "sobre", FAQ, posts) vive como Markdown em `astro/src/content/`.
 
 Este repositório é o **template**: uma única imagem Docker genérica
 (`brand-engine`), sem conteúdo de nenhuma marca embutido. Cada marca é uma
@@ -39,15 +39,15 @@ Passos únicos ao lançar uma marca (não se repetem em updates — ver
    comece a partir de
    [`templates/brand-content-example/`](templates/brand-content-example) —
    copie `pages/`, `faq/`, `posts/` pra **raiz** desse repo novo (não
-   aninhado em `src/content/`; é assim que o backend do Tina espera, ver
-   `tina/schema.ts`).
+   aninhado em `astro/src/content/`; é assim que o backend do Tina espera,
+   ver `tina/schema.ts`).
 2. **Token do GitHub**: gere um fine-grained Personal Access Token (ou deploy
    key) com escopo restrito a esse repositório único, permissão de
    leitura+escrita em "Contents" — nunca um token amplo de organização (ver
    `CONTENT_REPO_TOKEN` em `.env.example`). Só é necessário se a marca vai
    editar pelo `/admin`; clone/leitura funcionam sem ele.
 3. **Senha do `/admin`**: gere o hash com
-   `node scripts/hash-tina-password.mjs "senha-da-marca"` e preencha
+   `node tina/scripts/hash-tina-password.mjs "senha-da-marca"` e preencha
    `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no passo seguinte.
 4. **`.env`**: `cp .env.example .env` e preencha `SITE_*`, `DOMAIN`,
    `BRAND_SLUG`, `CONTENT_REPO_URL` (+ `CONTENT_REPO_TOKEN` se for usar o
@@ -72,8 +72,8 @@ docker compose --profile prod up -d
 
 Localmente, fora de Docker, `npm run dev` / `npm run build` usam o conteúdo
 de exemplo em [`templates/brand-content-example/`](templates/brand-content-example)
-(symlinkado em `src/content` automaticamente por
-`scripts/ensure-example-content.mjs` — ver `predev`/`prebuild` em
+(symlinkado em `astro/src/content` automaticamente por
+`astro/scripts/ensure-example-content.mjs` — ver `predev`/`prebuild` em
 `package.json`). Esse conteúdo de exemplo nunca entra na imagem Docker (ver
 `.dockerignore`); numa instância real ele é substituído pelo clone do
 repositório da marca.
@@ -85,7 +85,7 @@ Obrigatórias: `SITE_NAME`, `SITE_URL`, `SITE_DESCRIPTION`, `BRAND_SLUG`,
 `CONTENT_REPO_URL`. O resto — localização, locale, paleta de cores, portas —
 tem default ou é opcional. Sem nenhuma `THEME_*`, o site usa o tema padrão do
 template: o primeiro preset de
-[`src/lib/brand-presets.ts`](src/lib/brand-presets.ts). Cada `THEME_*`
+[`astro/src/lib/brand-presets.ts`](astro/src/lib/brand-presets.ts). Cada `THEME_*`
 definida sobrescreve só aquele token.
 
 Diferente de um site puramente estático, essas variáveis são lidas em
@@ -96,11 +96,11 @@ em build-time da imagem. Nenhum `.env` de marca entra na imagem genérica (ver
 
 ## Estrutura de conteúdo
 
-- `src/content/pages/{home,about,faq,jornal}.md` — título, meta description e
-  corpo (Markdown) das 4 páginas fixas.
-- `src/content/faq/*.md` — cada arquivo é uma pergunta (vira bloco visual +
-  entrada no FAQPage JSON-LD + linha no `llms.txt`).
-- `src/content/posts/*.md` — artigos do blog (`/jornal`).
+- `astro/src/content/pages/{home,about,faq,jornal}.md` — título, meta
+  description e corpo (Markdown) das 4 páginas fixas.
+- `astro/src/content/faq/*.md` — cada arquivo é uma pergunta (vira bloco
+  visual + entrada no FAQPage JSON-LD + linha no `llms.txt`).
+- `astro/src/content/posts/*.md` — artigos do blog (`/jornal`).
 
 Numa instância real, esse caminho é o destino do clone do repositório de
 conteúdo da marca (ver `entrypoint.sh`), não conteúdo commitado neste repo.
@@ -114,7 +114,7 @@ mesmo domínio da marca — ver labels em `docker-compose.yml`). Sem Tina Cloud:
 
 - **Auth**: usuário/senha único por marca via HTTP Basic Auth, checado a cada
   requisição (`tina/auth.ts`). Gere o hash da senha com
-  `node scripts/hash-tina-password.mjs "sua-senha"` e preencha
+  `node tina/scripts/hash-tina-password.mjs "sua-senha"` e preencha
   `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no `.env`.
 - **Banco**: SQLite embutido (`sqlite-level`, sem serviço externo — nunca
   Postgres/Mongo por marca), um arquivo por instância no volume persistente.
@@ -122,10 +122,10 @@ mesmo domínio da marca — ver labels em `docker-compose.yml`). Sem Tina Cloud:
   deploy key com escopo restrito a este único repositório — nunca um token
   amplo de organização).
 - **Schema** (`tina/schema.ts`) espelha exatamente as collections de
-  `src/content.config.ts` (`pages`/`faq`/`posts`) — é o mesmo conteúdo dos
-  dois lados, não um modelo paralelo.
+  `astro/src/content.config.ts` (`pages`/`faq`/`posts`) — é o mesmo conteúdo
+  dos dois lados, não um modelo paralelo.
 
-O schema/admin UI (`tina/__generated__/`, `public/admin/`) é gerado uma vez
+O schema/admin UI (`tina/__generated__/`, `astro/public/admin/`) é gerado uma vez
 na imagem (`npm run tina:build`, ver `Dockerfile`) — não depende de conteúdo
 de marca, só do schema, então não roda a cada boot de container.
 
@@ -153,7 +153,7 @@ gravando dentro do próprio repo de conteúdo, mantendo compatibilidade com
 `astro:assets`) fica como trabalho futuro.
 
 **Campos opcionais vazios**: um campo deixado em branco no formulário grava
-`null` no frontmatter (não omite a chave) — `src/content.config.ts` trata
+`null` no frontmatter (não omite a chave) — `astro/src/content.config.ts` trata
 isso normalizando `null` pra "ausente" antes da validação, então o build não
 quebra e o `.default(...)` do zod continua funcionando. Exceção: `updatedDate`
 (post) não é editável pelo `/admin` de propósito — é o único campo de data

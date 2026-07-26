@@ -1,4 +1,4 @@
-// Schema espelha exatamente as collections de src/content.config.ts (mesmos
+// Schema espelha exatamente as collections de astro/src/content.config.ts (mesmos
 // campos, mesmos paths) — o objetivo é editar o MESMO conteudo que o Astro
 // consome, nao um modelo paralelo. Ver README na raiz sobre o backend
 // self-hosted (tina/database.ts, tina/auth.ts, tina/server.mjs).
@@ -13,7 +13,9 @@ export const tinaConfig = {
   // tina/server.mjs — ver esse arquivo pra auth e persistencia.
   contentApiUrlOverride: '/api/tina/gql',
   build: {
-    publicFolder: 'public',
+    // Relativo à raiz do repo (rootPath do CLI, cwd por padrão) — public/
+    // vive em astro/public desde a separação astro/tina, não na raiz.
+    publicFolder: 'astro/public',
     outputFolder: 'admin',
     // sqlite-level embala uma binding nativa (better-sqlite3) que o esbuild
     // nao consegue empacotar — sem isso, tina/database.ts falha em runtime
@@ -33,7 +35,7 @@ export const tinaConfig = {
         // Relativo à raiz do repositorio de CONTEUDO (CONTENT_DIR), não do
         // template — ver o outputPath do FilesystemBridge em database.ts.
         // O repo de uma marca tem pages/, faq/, posts/ na raiz (mesmo layout
-        // de templates/brand-content-example/), nao aninhado em src/content.
+        // de templates/brand-content-example/), nao aninhado em astro/src/content.
         path: 'pages',
         format: 'md',
         fields: [

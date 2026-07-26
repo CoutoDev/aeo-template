@@ -8,7 +8,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 // nenhuma tela de login custom pra construir/manter.
 //
 // TINA_ADMIN_PASSWORD_HASH usa o formato "scrypt:<salt-hex>:<hash-hex>",
-// gerado por scripts/hash-tina-password.mjs. Nunca guarde a senha em texto
+// gerado por tina/scripts/hash-tina-password.mjs. Nunca guarde a senha em texto
 // puro no .env.
 const SCRYPT_KEY_LENGTH = 64;
 
@@ -41,7 +41,7 @@ export function createBasicAuthProvider() {
   const adminPasswordHash = process.env.TINA_ADMIN_PASSWORD_HASH;
   if (!adminUser || !adminPasswordHash) {
     throw new Error(
-      'TINA_ADMIN_USER e TINA_ADMIN_PASSWORD_HASH sao obrigatorias pra subir o backend do Tina. Veja .env.example e scripts/hash-tina-password.mjs.'
+      'TINA_ADMIN_USER e TINA_ADMIN_PASSWORD_HASH sao obrigatorias pra subir o backend do Tina. Veja .env.example e tina/scripts/hash-tina-password.mjs.'
     );
   }
 

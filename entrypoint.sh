@@ -74,14 +74,14 @@ if [ -f "$STAMP_FILE" ]; then
   BUILT_STAMP=$(cat "$STAMP_FILE")
 fi
 
-# Content Layer do Astro (glob() em src/content.config.ts) resolve
+# Content Layer do Astro (glob() em astro/src/content.config.ts) resolve
 # corretamente atraves de um symlink — verificado manualmente antes desta
-# implementacao. IMPORTANTE: src/content precisa ser removido antes — "ln
-# -sfn" com um diretorio real (ex: o conteudo de exemplo empacotado na
+# implementacao. IMPORTANTE: astro/src/content precisa ser removido antes —
+# "ln -sfn" com um diretorio real (ex: o conteudo de exemplo empacotado na
 # imagem) cria o symlink DENTRO dele em vez de substitui-lo, e o build
 # acaba lendo o conteudo antigo em silencio.
-rm -rf "$APP_DIR/src/content"
-ln -sfn "$CONTENT_DIR" "$APP_DIR/src/content"
+rm -rf "$APP_DIR/astro/src/content"
+ln -sfn "$CONTENT_DIR" "$APP_DIR/astro/src/content"
 
 if [ "$CURRENT_STAMP" = "$BUILT_STAMP" ] && [ -d "$BUILD_OUT_DIR" ]; then
   log "Conteudo e versao do template sem mudanca ($CURRENT_STAMP), pulando build."
