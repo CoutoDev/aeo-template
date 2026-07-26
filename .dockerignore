@@ -6,8 +6,17 @@ dist
 npm-debug.log*
 .DS_Store
 
-# .env NAO esta na lista de exclusao de proposito: o site e 100% estatico,
-# entao a identidade da marca (SITE_NAME, cores etc.) precisa estar
-# disponivel em build time dentro do container. .env so contem dados
-# publicos de marca, sem segredos (ver .env.example). A imagem final de
-# producao (stage "prod", nginx) nunca copia .env — so o HTML gerado.
+# A imagem "brand-engine" e agnostica de marca: o build real (npm run build)
+# roda dentro do container, no boot, depois do entrypoint clonar o conteudo
+# da marca e receber as env vars via "env_file" do docker-compose — nao no
+# build da imagem. .env/.env.production sao especificos de uma instancia e
+# nunca devem entrar na imagem generica.
+.env
+.env.production
+
+# Idem para o conteudo de exemplo: a imagem nao carrega conteudo de marca
+# nenhuma (ver entrypoint.sh). Excluir aqui garante que, se o symlink de
+# conteudo da marca falhar por algum motivo, o build quebra alto
+# (getRequiredPage lanca erro) em vez de servir silenciosamente o conteudo
+# de exemplo empacotado na imagem.
+src/content

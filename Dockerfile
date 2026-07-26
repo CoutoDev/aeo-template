@@ -13,14 +13,17 @@ COPY . .
 EXPOSE 4321
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
-# ---- Build: produces the static site in /app/dist ----
-FROM base AS build
+# ---- Server: runtime image for a single brand instance ----
+# Unlike a typical static-site image, no brand content is known at image
+# build time (see entrypoint.sh) — the real `astro build` runs at container
+# boot, after the brand's content repo is cloned. So this stage carries the
+# full Node/Astro toolchain *and* nginx together, instead of splitting
+# build/serve across stages the way a content-baked-in image would.
+FROM base AS server
+RUN apk add --no-cache nginx git
 COPY . .
-RUN npm run build
-
-# ---- Production: serves the static build with Nginx ----
-FROM nginx:1.27-alpine AS prod
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -16,11 +16,26 @@ services:
   web:
     build:
       context: .
-      target: prod
+      target: server
+    # Injeta o .env desta instância como variáveis de ambiente do processo do
+    # container (não é o mesmo mecanismo que a interpolação ${VAR} usada nas
+    # labels abaixo, que é resolvida pelo próprio docker compose no host).
+    # entrypoint.sh e o `npm run build` que ele dispara no boot leem essas
+    # variáveis via process.env — nenhum .env entra na imagem (ver
+    # .dockerignore).
+    env_file:
+      - .env
     ports:
       - "${WEB_PORT:-8080}:80"
     networks:
       - edge
+    volumes:
+      # Conteúdo clonado da marca + build gerado + o "carimbo" do commit já
+      # buildado — tudo que entrypoint.sh precisa sobreviver a um restart do
+      # container (não só do processo) pra pular o build quando o conteúdo
+      # não mudou. Montado DENTRO de /app (não em /data na raiz) de propósito
+      # — ver o comentário sobre EXDEV em entrypoint.sh.
+      - data:/app/data
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.rule=Host(`${DOMAIN}`)"
@@ -28,18 +43,23 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
       - "traefik.http.services.${BRAND_SLUG:-brand}.loadbalancer.server.port=80"
     # Teto de recurso por marca — relevante em VPS com várias marcas atrás do
-    # mesmo Traefik: sem isso, uma marca sob pico de tráfego pode disputar
-    # CPU/memória com as outras que compartilham o host. Nginx estático
-    # sozinho usa poucos MB; a folga é pra buffers/gzip/conexões simultâneas.
-    # Calibrado pra site de conteúdo/marketing de tráfego baixo-médio — se
-    # uma marca crescer além disso, é sinal de tirá-la da VPS compartilhada.
+    # mesmo Traefik: sem isso, uma marca sob pico de tráfego (ou de build)
+    # pode disputar CPU/memória com as outras que compartilham o host.
+    # Diferente do modelo antigo (nginx puro servindo estático, ~poucos MB),
+    # este container roda `astro build` no boot/troca de conteúdo — medido em
+    # ~420MB de pico pra um conteúdo mínimo de exemplo; conteúdo real de marca
+    # (mais posts/imagens) deve pedir mais. Ajuste por marca conforme o
+    # tamanho real do conteúdo dela.
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 128M
+          cpus: '1.0'
+          memory: 512M
     profiles:
       - prod
+
+volumes:
+  data:
 
 # Rede compartilhada com o proxy reverso da VPS (ver traefik/). Precisa
 # existir ANTES do primeiro `docker compose up`:
