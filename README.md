@@ -60,6 +60,13 @@ Passos únicos ao lançar uma marca (não se repetem em updates — ver
    roda o `astro build` completo (mais lento que os restarts seguintes — ver
    "Como uma instância sobe" acima).
 
+Os passos 4 e 5 (copiar `docker-compose.example.yml` e preencher o `.env`) têm
+um atalho: `npm run create-brand -- <diretorio-saida> --site-name ... --site-url
+... --site-description ... --domain ... --brand-slug ... --content-repo-url
+...` gera os dois arquivos prontos (+ `.env.example`, `.gitignore`, `README.md`)
+num diretório novo, que já é o repositório da marca. Rode sem argumentos pra
+ver a lista completa de opções.
+
 ## Rodar uma instância (dev deste template)
 
 ```bash

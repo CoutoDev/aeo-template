@@ -25,6 +25,7 @@
     "check": "astro check --root astro",
     "check:theme": "node astro/scripts/check-theme-leak.mjs",
     "llms-txt": "node astro/scripts/generate-llms-txt.mjs",
+    "create-brand": "node scripts/create-brand.mjs",
     "prebuild": "node astro/scripts/ensure-example-content.mjs && npm run llms-txt",
     "build": "astro build --root astro",
     "preview": "astro preview --root astro",
