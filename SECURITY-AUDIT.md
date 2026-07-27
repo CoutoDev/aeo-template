@@ -53,6 +53,7 @@ other brands — each runs in its own container with its own `.env` and volume.
 | 7 | Operational | Local `.env` holds a live GitHub PAT | ⚠️ Owner action |
 | 8 | Follow-up | npm-audit findings in the TinaCMS dependency tree (27 → 3; remainder blocked upstream) | ✅ Mostly fixed |
 | 9 | Follow-up | CSP shipped as Report-Only; must be validated and enforced | 📌 Tracked |
+| 10 | High (build) | `better-sqlite3` native addon broke `docker build`/CI (no compiler toolchain in `base`) | ✅ Fixed |
 
 ---
 
@@ -214,6 +215,26 @@ semver-range violation. It works empirically (verified below) but is not a pairi
 upstream ever tested; keep in mind if `minimatch`-adjacent glob-matching behavior
 ever looks off.
 
+**`better-sqlite3@13.0.1` broke the Docker/CI build, separately from all of the
+above.** It's a C++ native addon (transitive, via `sqlite-level`); locally `npm ci`
+succeeded silently because the host has a glibc prebuilt binary available, but
+`docker build --target server` failed with:
+```
+npm error gyp ERR! find Python
+npm error gyp ERR! stack Error: Could not find any Python installation to use
+```
+No prebuilt binary matches `node:22-alpine` (musl libc) for this version, so npm
+falls back to compiling via `node-gyp`, which needs `python3`/`make`/`g++` — none of
+which the `base` stage installed. **Fix, in `Dockerfile`:** split a new `deps` stage
+that installs the build toolchain and runs `npm ci` there, then have `base` (which
+`dev`/`server` both extend) `COPY --from=deps /app/node_modules ./node_modules`
+instead of running `npm ci` itself — so the compiler toolchain never reaches the
+image `server` actually ships. Verified: full `docker build --target server` build
+succeeds; the final image has no `python3`/`make`/`g++` (`which` finds nothing);
+`better-sqlite3`'s compiled binding loads and runs a real query inside the container;
+and a full boot (clone → build → non-root nginx + Tina, both serving) still works
+end-to-end, same as the earlier non-root verification.
+
 **Verified end-to-end**, not just by a passing build exit code:
 - `npm install` + `NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build` (the
   exact command the Dockerfile and CI run) — clean, twice in a row.
@@ -266,6 +287,40 @@ The CSP ships as `Content-Security-Policy-Report-Only` so it cannot break the Ti
 **To enforce:** browse the site *and* `/admin` with DevTools open, tighten the policy
 until there are zero violations (ideally dropping `'unsafe-inline'`), then rename the
 header to `Content-Security-Policy` in `nginx.conf`.
+
+### 10. HIGH (build) — `better-sqlite3` native addon broke the Docker/CI build ✅
+
+**Where:** `Dockerfile` (`base` stage).
+
+**Where it surfaced:** `docker build --target server` (and the equivalent CI step)
+failing with `exit code: 1` on `npm install -g npm@11.6.2 && npm ci`. Not a security
+finding in the traditional sense, but discovered directly as a consequence of
+Finding 8's `better-sqlite3@13.0.1` override, and it blocks shipping any of this
+hardening — so it's tracked here.
+
+**Root cause (reproduced, not assumed):** `better-sqlite3` is a C++ native addon
+(transitive dependency via `sqlite-level`, Tina's content-index storage). Locally,
+`npm ci` succeeded silently because the host machine has a matching glibc prebuilt
+binary; inside `node:22-alpine` (musl libc) no prebuilt binary matches, so npm falls
+back to compiling via `node-gyp`, which needs `python3`/`make`/`g++` — none of which
+the `base` stage installed:
+```
+npm error gyp ERR! find Python
+npm error gyp ERR! stack Error: Could not find any Python installation to use
+```
+
+**Fix:** split a new `deps` stage that installs the build toolchain and runs
+`npm ci` there; `base` (which `dev`/`server` both extend) now does
+`COPY --from=deps /app/node_modules ./node_modules` instead of running `npm ci`
+itself. This keeps the compiler toolchain out of the image that actually ships —
+consistent with the non-root/attack-surface hardening from Finding 4: a C++ compiler
+sitting in a container that also clones and builds untrusted brand content
+(`entrypoint.sh`) is exactly the kind of extra capability worth not shipping.
+
+**Verified:** full `docker build --target server` succeeds; the final image has no
+`python3`/`make`/`g++` (`which` finds nothing); `better-sqlite3`'s compiled binding
+loads and runs a real query inside the container; and a full boot (clone → build →
+non-root nginx + Tina, both serving, correct headers) still works end-to-end.
 
 ---
 

@@ -1,7 +1,16 @@
 # syntax=docker/dockerfile:1
 
-# ---- Base: shared deps layer ----
-FROM node:22-alpine AS base
+# ---- Deps: stage-only build toolchain for native modules (better-sqlite3) ----
+# better-sqlite3 (transitive, via sqlite-level) is a C++ addon: no prebuilt
+# binary matches this image, so npm falls back to compiling it with node-gyp,
+# which needs python3/make/g++ (confirmed: "npm ci" fails on plain
+# node:22-alpine with "Could not find any Python installation"). Isolated in
+# its own stage on purpose, NOT added to `base` directly — a compiler
+# toolchain is exactly what you don't want present in the final image, since
+# `server` also clones and builds untrusted brand content at boot (see
+# entrypoint.sh); `base` below only copies the already-built node_modules out
+# of here, so python3/make/g++ never reach dev/server.
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # npm@11 pin: ver comentário equivalente em ci.yml — node:22-alpine vem com
@@ -9,7 +18,14 @@ COPY package.json package-lock.json ./
 # desta árvore de deps. "npm ci" (não "npm install") pra a imagem publicada
 # refletir exatamente o lockfile validado no CI, não o que o registry serve
 # no momento do build.
-RUN npm install -g npm@11.6.2 && npm ci
+RUN apk add --no-cache python3 make g++ \
+ && npm install -g npm@11.6.2 && npm ci
+
+# ---- Base: shared deps layer ----
+FROM node:22-alpine AS base
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY --from=deps /app/node_modules ./node_modules
 
 # ---- Development ----
 # Runs `astro dev` with hot-reload; source code is bind-mounted via docker-compose.
