@@ -134,9 +134,13 @@ conteúdo da marca (ver `entrypoint.sh`), não conteúdo commitado neste repo.
 ## Backend do Tina (CMS self-hosted)
 
 Cada instância sobe, além do Nginx, um segundo processo Node (`tina/server.mjs`)
-expondo o GraphQL do [TinaCMS](https://tina.io) self-hosted em `/api/tina/gql`,
-com a UI de edição estática em `/admin` (atrás do Traefik, ambos os paths do
-mesmo domínio da marca — ver labels em `docker-compose.yml`). Sem Tina Cloud:
+expondo o GraphQL do [TinaCMS](https://tina.io) self-hosted em `/api/tina/gql`
+(porta 4001). A UI de edição estática em `/admin` é só mais um asset público
+do build do Astro (ver `astro/public/admin/` abaixo) — serve pelo Nginx na
+porta 80, junto com o resto do site, não pelo processo do Tina. Atrás do
+Traefik, só `/api/tina` é roteado pra porta 4001; `/admin` cai na rota "pega
+tudo" do domínio da marca, como qualquer outra página (ver labels em
+`docker-compose.yml`). Sem Tina Cloud:
 
 - **Auth**: usuário/senha único por marca via HTTP Basic Auth, checado a cada
   requisição (`tina/auth.ts`). Gere o hash da senha com

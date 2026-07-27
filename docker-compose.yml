@@ -48,10 +48,17 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.service=${BRAND_SLUG:-brand}-web"
       - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=80"
-      # Backend do Tina (admin UI + GraphQL) — mesmo container, processo e
-      # porta diferentes (ver entrypoint.sh). Prioridade maior que a rota
-      # "pega tudo" acima, senão o Traefik nunca chega a checar o PathPrefix.
-      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/tina`))"
+      # Backend do Tina (GraphQL) — mesmo container, processo e porta
+      # diferentes (ver entrypoint.sh). SO /api/tina aqui: o /admin (SPA
+      # estatica do Tina) e gerado em tina:build dentro de astro/public/admin
+      # e vai parar no dist do nginx (porta 80) igual qualquer outro asset
+      # publico — nao existe em lugar nenhum do processo tina/server.mjs
+      # (TinaNodeBackend so serve rotas sob options.basePath, "/api/tina/").
+      # Incluir /admin aqui mandava esse caminho pro processo errado (4001),
+      # que devolve "route not found" pra qualquer coisa fora de /api/tina.
+      # Prioridade maior que a rota "pega tudo" acima, senão o Traefik nunca
+      # chega a checar o PathPrefix.
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/tina`)"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.entrypoints=websecure"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.priority=10"

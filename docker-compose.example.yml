@@ -35,7 +35,10 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.service=${BRAND_SLUG:-brand}-web"
       - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=80"
-      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/tina`))"
+      # SO /api/tina: /admin (SPA estatica do Tina) vai parar no dist do
+      # nginx (porta 80) igual qualquer outro asset publico, nao no processo
+      # tina/server.mjs — ver comentario equivalente em docker-compose.yml.
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/tina`)"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.entrypoints=websecure"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.priority=10"
