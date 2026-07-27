@@ -51,7 +51,7 @@ other brands — each runs in its own container with its own `.env` and volume.
 | 5 | Low | No image vulnerability scanning in CI | ✅ Fixed |
 | 6 | Low | Username compared non-constant-time; wrong user short-circuits before scrypt | ✅ Fixed |
 | 7 | Operational | Local `.env` holds a live GitHub PAT | ⚠️ Owner action |
-| 8 | Follow-up | 27 npm-audit findings (21 high) in the TinaCMS dependency tree | 📌 Tracked |
+| 8 | Follow-up | npm-audit findings in the TinaCMS dependency tree (27 → 3; remainder blocked upstream) | ✅ Mostly fixed |
 | 9 | Follow-up | CSP shipped as Report-Only; must be validated and enforced | 📌 Tracked |
 
 ---
@@ -160,14 +160,104 @@ which the new rate limit covers.
 **Action (owner):** rotate the token; scope it fine-grained to the single content repo
 (Contents: read+write) only; confirm it is not reused elsewhere.
 
-### 8. FOLLOW-UP — npm-audit: 27 findings, 21 high 📌
+### 8. FOLLOW-UP — npm-audit: 27 → 3 findings; remainder blocked upstream ✅/📌
 
-`npm audit` reports 21 high / 5 moderate / 1 low, almost all from the
-`@tinacms/*` → `@graphql-codegen/*` → `lodash` chain plus an older bundled `vite`
-(`server.fs.deny` bypass, Windows-only path). Clearing them needs a **major
-`@tinacms/cli` bump** — a breaking change that needs its own test cycle — so it was
-excluded from this hardening pass. Recommend enabling Dependabot/Renovate for ongoing
-visibility, then doing the bump as a dedicated change with a full `/admin` + build test.
+**Correction to an earlier version of this report:** it originally said the fix
+"needs a major `@tinacms/cli` bump." That was wrong. `npm audit`'s `fixAvailable`
+field kept suggesting downgrades — first `@tinacms/cli@0.60.5` (published **2022**),
+later `@tinacms/cli@1.3.3` — while the installed `2.5.6` is already the `latest`
+dist-tag, published 2026-07-16. There is no newer `@tinacms/cli` to bump to.
+`npm audit`'s advisory-matching gets confused by this package's unusually large
+prerelease/canary tag history (3300+ versions) and points backward, not forward.
+Ignore that suggestion whenever it reappears.
+
+**What was actually fixed** — via targeted `package.json` `overrides` (the correct
+mechanism when a leaf dependency has a patch available but the mid-tier package that
+pins it hasn't bumped yet), applied in two rounds without ever touching
+`@tinacms/cli`'s own version:
+
+```json
+"overrides": {
+  "lodash": "^4.18.1",
+  "markdown-it": "^14.3.0",
+  "linkify-it": "^5.0.2",
+  "brace-expansion": "^5.0.8",
+  "esbuild": "0.25.0",
+  "react-dom": "^19.2.8",
+  "react-router": "^8.3.0",
+  "react-router-dom": "^7.18.1",
+  "better-sqlite3": "^13.0.1"
+}
+```
+
+Round 1 (`lodash`, `markdown-it`, `linkify-it`) was low-risk because the same
+dependency tree already proved the newer version works: `@tinacms/mdx` already
+resolved `markdown-it@14.3.0`/`linkify-it@5.0.2` internally, and top-level `lodash`
+was already `4.18.1` elsewhere in the tree — the override just makes the remaining
+old copies (under `@graphql-codegen/*` and the `@graphiql/react` GraphQL-explorer UI
+in `/admin`) match.
+
+Round 2 (`brace-expansion`, `esbuild`, `react-dom`, `react-router`,
+`react-router-dom`, `better-sqlite3`) cleared the rest except the `vite` chain below.
+One correction was needed here: `esbuild` was initially set to `^0.28.1`, which
+**broke `npm run tina:build`** for real —
+`Transforming destructuring to the configured target environment ("chrome87",
+"edge88", ... ) is not supported yet` while bundling the Mermaid.js diagram chunks
+Tina's rich-text editor ships (abnf/pie diagrams). That esbuild version dropped
+support for the old browser-target strings the bundled `vite@4.5.14` still configures.
+The minimum version that both clears the CVE (vulnerable range `<=0.24.2`) and keeps
+those targets working is **`0.25.0`** — fixed in `package.json`.
+
+`brace-expansion@5.0.8` is a note-worthy exception: it's forced under
+`minimatch@5.1.9`/`9.0.9`, which each declare `brace-expansion: ^2.0.x` — a real
+semver-range violation. It works empirically (verified below) but is not a pairing
+upstream ever tested; keep in mind if `minimatch`-adjacent glob-matching behavior
+ever looks off.
+
+**Verified end-to-end**, not just by a passing build exit code:
+- `npm install` + `NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build` (the
+  exact command the Dockerfile and CI run) — clean, twice in a row.
+- Booted `tina/server.mjs` directly against real content (the
+  `templates/brand-content-example` set) with the new dependency graph: schema
+  indexed into a fresh `better-sqlite3@13.0.1` file (via `sqlite-level`), backend
+  came up, `POST /api/tina/gql` without credentials returned `401`, and a real
+  authenticated GraphQL query (`pagesConnection { totalCount edges { node { id } } }`)
+  returned correct data (4 pages, correct IDs) — proving the new `better-sqlite3`
+  major, `react-dom`, and `react-router`/`react-router-dom` versions all work through
+  the actual content-indexing and query path, not just that node modules load.
+
+`npm audit` result: **27 → 3** findings (was 12 high / 3 moderate / 1 low; now
+2 low / 1 high).
+
+**What's still blocked, and why (tested, not assumed):** the 3 remaining findings
+(`vite`, `@vitejs/plugin-react`, and `@tinacms/cli` itself, flagged transitively) all
+trace to one node — `@tinacms/cli`'s own bundled `vite@4.5.14` (used to build the
+`/admin` React SPA). Two targeted attempts to bump just that nested copy were tried
+and both **broke `npm run tina:build`** with different errors:
+
+- `vite@8.1.5` (matching our own top-level, already-proven version) → fails with
+  `SyntaxError: The requested module 'vite' does not provide an export named
+  'splitVendorChunkPlugin'` — `@tinacms/cli`'s compiled code imports an API vite
+  removed in a later major.
+- `vite@6.4.3` (the minimum version clearing the CVE ranges, still exporting
+  `splitVendorChunkPlugin`) → fails differently, in esbuild's `define` handling:
+  `Invalid define value (must be an entity name or JS literal)` while bundling
+  `node_modules/react/index.js`.
+
+Both are genuine incompatibilities in `@tinacms/cli`'s own compiled bundling code —
+not something a smarter version choice on our end can route around.
+
+**Residual risk assessment:** the blocked findings are all in `@tinacms/cli`'s
+*build-time* admin-bundling step — it runs once per image build (`tina:build`, in the
+Dockerfile) against this repo's own template code, not against attacker-supplied input
+at runtime. Everything genuinely runtime-reachable (`markdown-it`/`linkify-it` in the
+GraphiQL explorer panel of `/admin`, the SQLite content index, the React admin UI
+itself) is now on patched versions and verified working.
+
+**Action:** file/track an upstream issue with `tinacms/tinacms` referencing their own
+bundled `vite` version; re-run `npm audit` after any `@tinacms/cli` release newer than
+`2.5.6` lands and retry overriding `vite` then. Enable Dependabot/Renovate for ongoing
+visibility so this is caught automatically rather than manually re-checked.
 
 ### 9. FOLLOW-UP — Enforce the CSP 📌
 
@@ -240,7 +330,8 @@ curl -sI http://127.0.0.1:<debug-port>/    # expect the headers above, no Server
 - [ ] Rotate the currently-live PAT in the local `.env` (Finding 7).
 - [ ] Set `deploy.resources.limits` per brand (already in the compose files) so one
       brand's build/traffic spike can't starve the others.
-- [ ] Keep an eye on npm-audit / schedule the TinaCMS bump (Follow-up 8); validate and
+- [ ] Keep an eye on npm-audit for a `@tinacms/cli` release newer than `2.5.6` that
+      bundles a patched `vite` (Follow-up 8, down to 3 findings); validate and
       enforce the CSP (Follow-up 9).
 - [ ] Consider Traefik access logging + a container restart policy (`unless-stopped`,
       already set) for auditability and resilience.

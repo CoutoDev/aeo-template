@@ -57,10 +57,14 @@ jobs:
 
       # Varre a imagem publicavel por CVEs conhecidos (SO + deps npm que ficam
       # na imagem). Nao-bloqueante de proposito (exit-code: 0): serve pra dar
-      # VISIBILIDADE — as 21 vulns high de hoje vem da arvore do @tinacms e so
-      # somem com um bump major (ver SECURITY-AUDIT.md), entao travar o publish
-      # nelas agora so pararia releases sem correcao disponivel. Depois do bump
-      # do Tina, troque pra exit-code: '1' pra virar gate de verdade.
+      # VISIBILIDADE — os vulns high restantes (ver SECURITY-AUDIT.md, Finding 8)
+      # vem todos do vite/esbuild que o proprio @tinacms/cli empacota pra buildar
+      # o /admin; ja tentamos forcar via `overrides` no package.json e quebra o
+      # `npm run tina:build` de verdade (import quebrado, nao so CVE) — so some
+      # numa release futura do @tinacms/cli (nao existe hoje: 2.5.6 ja e o
+      # "latest" publicado). Travar o publish nisso agora so pararia releases sem
+      # correcao disponivel. Quando o Tina publicar algo mais novo, reteste os
+      # overrides e troque pra exit-code: '1' pra virar gate de verdade.
       # ignore-unfixed evita ruido de CVE sem patch upstream disponivel.
       - name: Scan de vulnerabilidades da imagem (Trivy)
         uses: aquasecurity/trivy-action@v0.36.0
