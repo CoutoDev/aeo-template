@@ -41,26 +41,43 @@ Passos únicos ao lançar uma marca (não se repetem em updates — ver
    copie `pages/`, `faq/`, `posts/` pra **raiz** desse repo novo (não
    aninhado em `astro/src/content/`; é assim que o backend do Tina espera,
    ver `tina/schema.ts`).
-2. **Token do GitHub**: gere um fine-grained Personal Access Token (ou deploy
-   key) com escopo restrito a esse repositório único, permissão de
+2. **Token do GitHub (conteúdo)**: gere um fine-grained Personal Access Token
+   (ou deploy key) com escopo restrito a esse repositório único, permissão de
    leitura+escrita em "Contents" — nunca um token amplo de organização (ver
-   `CONTENT_REPO_TOKEN` em `.env.example`). Necessário se o repositório de
-   conteúdo for privado (o `entrypoint.sh` usa o token pra autenticar o
-   clone) ou se a marca vai editar pelo `/admin`; repo público + `/admin`
-   desativado funcionam sem ele.
-3. **Senha do `/admin`**: gere o hash com
-   `node tina/scripts/hash-tina-password.mjs "senha-da-marca"` e preencha
-   `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no passo seguinte.
-4. **`.env`**: `cp .env.example .env` e preencha `SITE_*`, `DOMAIN`,
+   `CONTENT_REPO_TOKEN` em `.env.example`). **Obrigatório sempre que o
+   repositório de conteúdo for privado** (o `entrypoint.sh` usa o token pra
+   autenticar o clone) ou se a marca vai editar pelo `/admin` — na prática o
+   caso comum, já que o repo de conteúdo raramente é público. Sem o token
+   nesse caso, o container não erra na hora: ele crash-loopa no boot com
+   `could not read Username for 'https://github.com'` (o `git clone` tentando
+   pedir credencial interativa dentro do container) — sintoma que não parece
+   um problema de auth à primeira vista. Repo público + `/admin` desativado:
+   pode deixar em branco.
+3. **Autentique no GHCR**: `ghcr.io/brand-engine/brand-engine` é um pacote
+   **privado** — sem login, qualquer `docker` que precise da imagem (inclusive
+   o passo seguinte) falha com um 403/"not found" indistinguível de um erro
+   de tag inexistente. Ver "Autenticação no GHCR" abaixo — a forma que
+   funciona hoje não é a que a documentação do GitHub recomenda por padrão.
+4. **Senha do `/admin`**: gere o hash com um container descartável da própria
+   imagem — não precisa de `docker-compose.yml` nenhum ainda, só da tag que
+   você vai usar (a mesma de `docker-compose.example.yml`, ou a que você
+   escolher):
+   `docker run --rm --entrypoint node ghcr.io/brand-engine/brand-engine:<tag> tina/scripts/hash-tina-password.mjs "senha-da-marca"`
+   — preencha `TINA_ADMIN_USER`/`TINA_ADMIN_PASSWORD_HASH` no passo seguinte.
+   (Depois que o `docker-compose.yml` da marca existir, `docker compose run
+   --rm --entrypoint node web tina/scripts/hash-tina-password.mjs "..."`
+   funciona igual, sem repetir a tag — é o que `npm run create-brand` deixa
+   pronto no README que ele gera.)
+5. **`.env`**: `cp .env.example .env` e preencha `SITE_*`, `DOMAIN`,
    `BRAND_SLUG`, `CONTENT_REPO_URL` (+ `CONTENT_REPO_TOKEN` se o repo for
    privado ou for usar o `/admin`), `TINA_ADMIN_*`.
-5. **Suba a instância**: no repositório/servidor da marca (não neste
+6. **Suba a instância**: no repositório/servidor da marca (não neste
    template), use [`docker-compose.example.yml`](docker-compose.example.yml)
    como `docker-compose.yml` e rode `docker compose up -d`. O primeiro boot
    roda o `astro build` completo (mais lento que os restarts seguintes — ver
    "Como uma instância sobe" acima).
 
-Os passos 4 e 5 (copiar `docker-compose.example.yml` e preencher o `.env`) têm
+Os passos 5 e 6 (copiar `docker-compose.example.yml` e preencher o `.env`) têm
 um atalho: `npm run create-brand -- <diretorio-saida> --site-name ... --site-url
 ... --site-description ... --domain ... --brand-slug ... --content-repo-url
 ...` gera os dois arquivos prontos (+ `.env.example`, `.gitignore`, `README.md`)
@@ -213,6 +230,50 @@ dev do template, com `build:` local) — usa
 [`docker-compose.example.yml`](docker-compose.example.yml), que referencia a
 imagem publicada (`image: ghcr.io/brand-engine/brand-engine:...`). Copie esse
 arquivo pro repositório/servidor da marca junto com o `.env` dela.
+
+Nenhuma tag `vX.Y.Z` foi publicada ainda (isso só acontece num push de tag
+`vX.Y.Z` — ver acima), então hoje as únicas tags que existem de verdade são
+`latest` e as `sha-<commit>` (uma por push pro main). `docker-compose.example.yml`
+está fixado numa dessas `sha-<commit>` reais — **não** assuma que uma tag
+semver tipo `0.5.2` existe só porque `package.json`/o `Dockerfile` mencionam
+uma "version"; confira o pacote no GHCR (ou `gh run list`) antes de pinar uma.
+
+## Autenticação no GHCR
+
+`ghcr.io/brand-engine/brand-engine` é um pacote **privado** — todo
+`docker compose pull`/`up` numa instância de marca precisa de um login no
+GHCR primeiro, ou falha com um 403/"not found" que parece um erro de tag
+inexistente (item acima) mas é na verdade falta de autenticação.
+
+Confirmado empiricamente (e documentado pelo próprio GitHub): a forma de
+autenticar que a documentação do GitHub recomenda por padrão hoje em dia —
+fine-grained PAT ou token de instalação de GitHub App — **não funciona** pra
+puxar pacotes de container:
+
+- Fine-grained PAT não tem permissão de "Packages" nenhuma — não dá nem pra
+  tentar dar esse escopo a um fine-grained PAT.
+- Token de instalação de GitHub App (mesmo com `packages: write` e a app
+  instalada/vinculada certo) não consegue ler pacotes de container de
+  organização — limitação reconhecida da própria plataforma GitHub, sem
+  prazo de correção (ver GitHub Community Discussion #171423).
+- **Só um PAT clássico com escopo `read:packages` funciona de verdade**:
+
+  ```bash
+  echo "$GHCR_TOKEN" | docker login ghcr.io -u <seu-usuario-github> --password-stdin
+  ```
+
+[`scripts/ghcr-pull.sh`](scripts/ghcr-pull.sh) empacota esse login (lendo
+`GHCR_USERNAME`/`GHCR_TOKEN` do ambiente) + um `docker pull` opcional, pra não
+reinventar isso a cada marca nova.
+
+**Alternativa que elimina o problema inteiro**: tornar o pacote público. A
+imagem não carrega segredo nenhum de marca (o `Dockerfile` só copia o código
+deste template — `.env`, `.env.production` e o conteúdo de marca são
+excluídos via `.dockerignore`; segredos reais entram só em runtime, via
+`.env` de cada instância). Pública, qualquer `docker compose pull` funciona
+sem login nenhum. É uma decisão de quem administra a organização no GitHub
+(troca de visibilidade de pacote, feita pela UI do GitHub) — não algo pra
+mudar sem essa decisão explícita.
 
 ## Atualizar o template
 

@@ -11,8 +11,14 @@ services:
     # Fixe numa tag concreta (versão ou "sha-<commit>") por marca — "latest"
     # move a marca a cada push pro main (ver ci.yml) e torna rollback
     # impossível sem editar isto primeiro. Publicadas em
-    # https://github.com/brand-engine/pkgs/container/brand-engine.
-    image: ghcr.io/brand-engine/brand-engine:0.5.2
+    # https://github.com/brand-engine/pkgs/container/brand-engine. Nenhuma
+    # tag semver (vX.Y.Z) foi publicada ainda (só acontece num push de tag
+    # "vX.Y.Z" — ver ci.yml/README); a tag abaixo é um "sha-<commit>" real,
+    # confirmado publicado. Não copie um número de versão do package.json ou
+    # do Dockerfile achando que existe uma tag correspondente no GHCR sem
+    # conferir antes (o pull falha com 403/"not found" indistinguível de um
+    # erro de autenticação — ver README, "Autenticação no GHCR").
+    image: ghcr.io/brand-engine/brand-engine:sha-70f38fb0bd1a71c46eda0901eb267a09e3361f91
     env_file:
       - .env
     ports:

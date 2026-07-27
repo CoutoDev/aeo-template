@@ -107,13 +107,31 @@ mkdirSync(outDir, { recursive: true });
 // "vX.Y.Z" é empurrada — ver ci.yml), todo push pro main publica só "latest"
 // e "sha-<commit>". "latest" é flutuante (README recomenda não fixar nela —
 // rollback fica impossível sem editar o compose primeiro), então o default
-// aqui é o sha do HEAD atual. Isso pressupõe que o job "publish" do CI já
-// rodou com sucesso pra este commit — confirme antes do primeiro pull.
+// aqui é o sha de origin/main, NÃO o HEAD local: CI só builda o que foi
+// empurrado, e um checkout com commits locais não empurrados (comum em dev)
+// geraria uma tag "sha-<commit>" que ainda não existe no GHCR — pull falharia
+// com 403/"not found" indistinguível de erro de autenticação (ver README,
+// "Autenticação no GHCR"). Mesmo assim, ainda depende do job "publish" do CI
+// já ter terminado com sucesso pra esse commit — confirme antes do pull.
+let originSha;
+try {
+  originSha = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+} catch {
+  originSha = null;
+}
 const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
-const imageTag = flags['image-tag'] || `sha-${headSha}`;
+if (!flags['image-tag'] && originSha && originSha !== headSha) {
+  console.warn(
+    `Aviso: HEAD deste checkout (${headSha}) difere de origin/main (${originSha}) — ` +
+      'usando origin/main pro default de --image-tag, já que só commits empurrados têm imagem publicada. ' +
+      'Rode `git fetch origin main` antes se origin/main local puder estar desatualizado.',
+  );
+}
+const resolvedSha = originSha || headSha;
+const imageTag = flags['image-tag'] || `sha-${resolvedSha}`;
 if (!flags['image-tag']) {
   console.warn(
-    `Sem --image-tag: usando sha-${headSha} (HEAD deste checkout). ` +
+    `Sem --image-tag: usando sha-${resolvedSha}. ` +
       'Confirme que o job "publish" do CI publicou essa tag antes de rodar `docker compose pull` de verdade.',
   );
 }
