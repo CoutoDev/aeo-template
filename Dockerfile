@@ -35,6 +35,17 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--ignore-lock"]
 # build/serve across stages the way a content-baked-in image would.
 FROM base AS server
 RUN apk add --no-cache nginx git
+# Usuario nao-root pra rodar o container (defesa em profundidade: um bug de
+# execucao no nginx, no backend do Tina ou no proprio `astro build` — que roda
+# sobre conteudo clonado de um repo de marca — nao roda como root dentro do
+# container). uid/gid fixo 1001 de proposito: o volume nomeado `data`, quando
+# criado VAZIO, herda o dono do /app/data que existe na imagem (ver chown
+# abaixo), entao esse uid precisa ser estavel. nginx como nao-root precisa dos
+# seus dirs de runtime graváveis pelo appuser (o pid vai pra /tmp via `nginx -g`
+# no entrypoint.sh, evitando o /run/nginx root-only do default compilado).
+RUN addgroup -g 1001 -S appuser \
+ && adduser -u 1001 -S -G appuser appuser \
+ && chown -R appuser:appuser /var/lib/nginx /var/log/nginx
 COPY . .
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
@@ -48,6 +59,14 @@ RUN chmod +x /entrypoint.sh
 # container — ver entrypoint.sh. O heap maior e necessario mesmo pra
 # conteudo minimo (medido ~2-4GB no build do schema + bundle do admin UI).
 RUN NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build
+# /app inteiro precisa ser gravavel pelo appuser: no boot, o entrypoint.sh
+# troca o symlink astro/src/content, roda `astro build` (que escreve caches em
+# .astro/, node_modules/.vite, etc.) e grava o dist no volume /app/data. Criar
+# /app/data com dono appuser ANTES do volume ser montado faz o volume nomeado,
+# quando vazio, subir ja com esse dono (senao subiria como root e o build nao
+# escreveria). chown -R DEPOIS do ultimo passo que escreve em /app como root
+# (o tina:build acima) — invalidar o cache desse passo aqui nao importa.
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
 # CI publica "latest"/"sha-<commit>" em TODO push pro main (ver
 # .github/workflows/ci.yml), a maioria sem bump de package.json "version" —
 # sem isso, o carimbo de build (entrypoint.sh) so muda quando ALGUEM lembra
@@ -62,5 +81,10 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 npm run tina:build
 # toda publicação — só é lido em runtime pelo entrypoint.sh, não no build.
 ARG TEMPLATE_BUILD_ID
 ENV TEMPLATE_BUILD_ID=${TEMPLATE_BUILD_ID}
-EXPOSE 80 4001
+# nginx escuta em 8080 (nao 80): rodando como nao-root, o processo nao pode
+# bindar portas <1024. Interno ao container — o Traefik roteia pra 8080 via
+# label (ver docker-compose*.yml, loadbalancer.server.port=8080). O backend do
+# Tina (4001) fica acima de 1024, entao nao muda.
+EXPOSE 8080 4001
+USER appuser
 ENTRYPOINT ["/entrypoint.sh"]

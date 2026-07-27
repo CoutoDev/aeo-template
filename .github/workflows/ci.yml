@@ -55,6 +55,22 @@ jobs:
       - name: Build da imagem Docker (sem publicar)
         run: docker build --target server -t brand-engine:ci-check .
 
+      # Varre a imagem publicavel por CVEs conhecidos (SO + deps npm que ficam
+      # na imagem). Nao-bloqueante de proposito (exit-code: 0): serve pra dar
+      # VISIBILIDADE — as 21 vulns high de hoje vem da arvore do @tinacms e so
+      # somem com um bump major (ver SECURITY-AUDIT.md), entao travar o publish
+      # nelas agora so pararia releases sem correcao disponivel. Depois do bump
+      # do Tina, troque pra exit-code: '1' pra virar gate de verdade.
+      # ignore-unfixed evita ruido de CVE sem patch upstream disponivel.
+      - name: Scan de vulnerabilidades da imagem (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: brand-engine:ci-check
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+
   # Publica ghcr.io/<owner>/brand-engine só em push pro main (tag "latest",
   # rastreável por marca via rollback pro sha anterior se precisar) ou numa
   # tag "vX.Y.Z" (tags semver — o mecanismo de update/rollback por marca

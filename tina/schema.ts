@@ -12,6 +12,12 @@ export const tinaConfig = {
   // Backend proprio (Node, fora do Next.js/TinaCloud) montado por
   // tina/server.mjs — ver esse arquivo pra auth e persistencia.
   contentApiUrlOverride: '/api/tina/gql',
+  // LocalAuthProvider (tina/config.ts) só evita o popup de login em
+  // app.tina.io — sem isso aqui, o /admin AINDA chama
+  // identity-v2.tinajs.io/v2/posthog-token em todo boot pra iniciar
+  // telemetria (PostHogTracker, incondicional, roda mesmo em modo
+  // self-hosted/local — ver node_modules/tinacms/dist/index.js).
+  telemetry: 'disabled',
   build: {
     // Relativo à raiz do repo (rootPath do CLI, cwd por padrão) — public/
     // vive em astro/public desde a separação astro/tina, não na raiz.

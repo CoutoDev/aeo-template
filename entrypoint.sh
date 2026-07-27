@@ -138,7 +138,10 @@ CONTENT_DIR="$CONTENT_DIR" \
 TINA_PID=$!
 
 log "Subindo nginx..."
-nginx -g "daemon off;" &
+# pid em /tmp (gravavel por qualquer usuario) em vez do default compilado
+# (/run/nginx/nginx.pid, root-only): o container roda como nao-root (ver
+# Dockerfile), que nao conseguiria criar o pid no caminho padrao.
+nginx -g "pid /tmp/nginx.pid; daemon off;" &
 NGINX_PID=$!
 
 # De proposito NAO faz "exec nginx": este script continua como PID 1 do

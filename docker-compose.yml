@@ -25,12 +25,14 @@ services:
     # .dockerignore).
     env_file:
       - .env
-    ports:
-      - "${WEB_PORT:-8080}:80"
-      # Acesso direto ao backend do Tina sem Traefik (dev/debug). Atrás do
-      # Traefik, o roteamento por path já cobre /admin e /api/tina na porta
-      # 80 pública — ver labels abaixo.
-      - "${TINA_PORT:-4001}:4001"
+    # Sem `ports:` de propósito: atrás do Traefik, todo o tráfego público entra
+    # pela :443 e é roteado por Host/path (ver labels abaixo) — a porta 80 do
+    # nginx e a 4001 do backend do Tina NÃO devem ser publicadas no host, senão
+    # ficam acessíveis direto no IP da VPS, contornando TLS, o redirect
+    # HTTP→HTTPS e qualquer middleware (rate limit etc.). Pra debug local
+    # pontual, exponha na loopback e nunca em 0.0.0.0, ex:
+    #   ports:
+    #     - "127.0.0.1:${TINA_PORT:-4001}:4001"
     networks:
       - edge
     volumes:
@@ -47,7 +49,7 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}.entrypoints=websecure"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${BRAND_SLUG:-brand}.service=${BRAND_SLUG:-brand}-web"
-      - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=80"
+      - "traefik.http.services.${BRAND_SLUG:-brand}-web.loadbalancer.server.port=8080"
       # Backend do Tina (GraphQL) — mesmo container, processo e porta
       # diferentes (ver entrypoint.sh). SO /api/tina aqui: o /admin (SPA
       # estatica do Tina) e gerado em tina:build dentro de astro/public/admin
@@ -64,6 +66,15 @@ services:
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.priority=10"
       - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.service=${BRAND_SLUG:-brand}-tina"
       - "traefik.http.services.${BRAND_SLUG:-brand}-tina.loadbalancer.server.port=4001"
+      # Rate limit no endpoint público do Tina (/api/tina). É a única rota que
+      # faz trabalho pesado por request (verificação scrypt no auth + GraphQL):
+      # sem teto, um flood não autenticado força um scrypt por tentativa e pode
+      # saturar CPU do container — mais crítico numa VPS onde várias marcas
+      # dividem o host. average = req/s sustentado por IP de origem, burst =
+      # pico curto tolerado antes do 429. Ajuste conforme o uso real do /admin.
+      - "traefik.http.middlewares.${BRAND_SLUG:-brand}-tina-rl.ratelimit.average=5"
+      - "traefik.http.middlewares.${BRAND_SLUG:-brand}-tina-rl.ratelimit.burst=10"
+      - "traefik.http.routers.${BRAND_SLUG:-brand}-tina.middlewares=${BRAND_SLUG:-brand}-tina-rl"
     # Teto de recurso por marca — relevante em VPS com várias marcas atrás do
     # mesmo Traefik: sem isso, uma marca sob pico de tráfego (ou de build)
     # pode disputar CPU/memória com as outras que compartilham o host.
