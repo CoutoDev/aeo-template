@@ -3,9 +3,21 @@
 // docker-compose.yml (aponta pra imagem publicada) + .env preenchido, sem
 // copiar o template inteiro — ver README, "Provisionar uma marca nova". O
 // diretório de saída é pra virar o repo/servidor da marca, não fica dentro
-// deste checkout.
+// deste checkout. Também popula (git push) o repositório de CONTEUDO
+// (--content-repo-url, um repo GitHub separado) com o exemplo de
+// templates/brand-content-example/ na primeira vez — ver bootstrapContent().
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,6 +81,91 @@ function parseArgs(argv) {
     }
   }
   return { positional, flags };
+}
+
+function git(args) {
+  return execFileSync('git', args, {
+    encoding: 'utf8',
+    stdio: 'pipe',
+    // Sem terminal interativo: um repo privado sem token (ou token sem
+    // permissão) precisa falhar na hora, não travar pedindo usuário/senha no
+    // stdin — mesma classe de sintoma documentada no README pro entrypoint.sh.
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  });
+}
+
+function authHeaderArgs(token) {
+  if (!token) return [];
+  const header = `Authorization: Basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`;
+  return ['-c', `http.extraHeader=${header}`];
+}
+
+// Popula CONTENT_REPO_URL com o conteúdo de exemplo (templates/brand-content-example/)
+// na primeira vez: sem isso, um repositório recém-criado no GitHub (vazio, sem
+// commits) faz o entrypoint.sh do container falhar no boot logo no primeiro
+// `git rev-parse HEAD` do conteúdo clonado. Se o repo já tiver qualquer commit,
+// não mexe em nada — nunca sobrescreve conteúdo real de uma marca já em produção.
+// Retorna 'populated' | 'already-had-content' | 'failed'.
+function bootstrapContent(contentRepoUrl, token) {
+  const authArgs = authHeaderArgs(token);
+  const tmpDir = mkdtempSync(join(tmpdir(), 'brand-engine-content-'));
+  try {
+    git([...authArgs, 'clone', '--quiet', contentRepoUrl, tmpDir]);
+
+    try {
+      git(['-C', tmpDir, 'rev-parse', 'HEAD']);
+      console.log(`Repositório de conteúdo (${contentRepoUrl}) já tem commits — não mexi nele.`);
+      return 'already-had-content';
+    } catch {
+      // Repo clonado com sucesso mas sem nenhum commit ainda — cai pro bootstrap abaixo.
+    }
+
+    for (const sub of ['pages', 'faq', 'posts']) {
+      cpSync(join(REPO_ROOT, 'templates/brand-content-example', sub), join(tmpDir, sub), {
+        recursive: true,
+      });
+    }
+
+    git(['-C', tmpDir, 'add', '-A']);
+    git([
+      '-C',
+      tmpDir,
+      '-c',
+      'user.name=brand-engine',
+      '-c',
+      'user.email=brand-engine@localhost',
+      'commit',
+      '--quiet',
+      '-m',
+      'Conteúdo inicial (a partir de templates/brand-content-example/)',
+    ]);
+
+    const branch = git(['-C', tmpDir, 'symbolic-ref', '--short', 'HEAD']).trim();
+    git([...authArgs, '-C', tmpDir, 'push', '--quiet', '-u', 'origin', 'HEAD']);
+
+    console.log(`Conteúdo de exemplo empurrado pra ${contentRepoUrl} (branch "${branch}").`);
+    if (branch !== 'main') {
+      console.warn(
+        `AVISO: branch padrão do repo de conteúdo é "${branch}", não "main" — defina ` +
+          `CONTENT_REPO_BRANCH="${branch}" no .env gerado (tina/database.ts usa "main" como default).`,
+      );
+    }
+    return 'populated';
+  } catch (err) {
+    console.error(`\nAVISO: não consegui popular o repositório de conteúdo (${contentRepoUrl}) automaticamente:`);
+    console.error(err.stderr?.toString() || err.message);
+    console.error(
+      'Confirme que o repositório existe (crie um repo GitHub vazio primeiro, "create-brand" não cria ' +
+        'repositórios remotos) e que --content-repo-token (se privado) tem permissão de leitura+escrita em ' +
+        '"Contents". Pra popular manualmente:\n' +
+        `  git clone ${contentRepoUrl} conteudo-temp\n` +
+        '  cp -r templates/brand-content-example/{pages,faq,posts} conteudo-temp/\n' +
+        '  cd conteudo-temp && git add -A && git commit -m "Conteúdo inicial" && git push',
+    );
+    return 'failed';
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 function applyEnvReplacements(template, replacements) {
@@ -216,6 +313,10 @@ console.log('  .env.example');
 console.log('  .gitignore');
 console.log('  README.md');
 
+console.log(`\nPopulando repositório de conteúdo (${flags['content-repo-url']})...`);
+const contentStatus = bootstrapContent(flags['content-repo-url'], flags['content-repo-token']);
+if (contentStatus === 'failed') process.exitCode = 1;
+
 try {
   execFileSync('docker', ['compose', '-f', join(outDir, 'docker-compose.yml'), 'config'], {
     cwd: outDir,
@@ -228,13 +329,20 @@ try {
   process.exitCode = 1;
 }
 
+const contentStep =
+  contentStatus === 'failed'
+    ? '2. O repositório de conteúdo NÃO foi populado (ver AVISO acima) — crie um\n' +
+      '   repositório GitHub vazio em --content-repo-url e rode este comando de novo\n' +
+      '   (ou popule manualmente, ver instruções no AVISO acima).'
+    : '2. Repositório de conteúdo OK (já tinha commits ou foi populado com o\n' +
+      '   exemplo de templates/brand-content-example/ agora).';
+
 console.log(`
 Próximos passos:
 1. Confirme que a tag da imagem (${imageTag}) foi publicada de verdade
    (gh run list --repo brand-engine/brand-engine, ou o pacote em
    https://github.com/brand-engine/brand-engine/pkgs/container/brand-engine).
-2. Se ainda não existir, crie o repositório de conteúdo a partir de
-   templates/brand-content-example/ deste template.
+${contentStep}
 3. Preencha CONTENT_REPO_TOKEN (se o repo de conteúdo for privado ou for usar
    /admin) e TINA_ADMIN_PASSWORD_HASH em ${join(outDir, '.env')} — gere o hash com:
    docker compose run --rm --entrypoint node web tina/scripts/hash-tina-password.mjs "senha-desta-marca"

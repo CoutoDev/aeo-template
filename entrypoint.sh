@@ -79,7 +79,14 @@ fi
 # resolver). Cai pra "version" se a imagem foi buildada sem o build-arg (ex:
 # "docker build" local, sem passar por CI).
 TEMPLATE_VERSION="${TEMPLATE_BUILD_ID:-$(grep -m1 '"version"' "$APP_DIR/package.json" | sed -E 's/.*"version": *"([^"]+)".*/\1/')}"
-CURRENT_SHA=$(git -C "$CONTENT_DIR" rev-parse HEAD)
+# Repo clonado com sucesso mas sem nenhum commit (comum num repo GitHub
+# recem-criado, ainda vazio) faz o rev-parse abaixo falhar com uma mensagem
+# generica do git ("ambiguous argument 'HEAD'") que nao parece um problema de
+# conteudo a primeira vista. Falha explicita aqui em vez disso.
+if ! CURRENT_SHA=$(git -C "$CONTENT_DIR" rev-parse HEAD 2>/dev/null); then
+  log "ERRO: repositorio de conteudo ($CONTENT_REPO_URL) esta vazio (sem commits). Rode 'npm run create-brand' (popula o conteudo de exemplo automaticamente se o repo estiver vazio) ou empurre um commit inicial manualmente antes de subir a instancia."
+  exit 1
+fi
 CURRENT_STAMP="${CURRENT_SHA}:${TEMPLATE_VERSION}"
 BUILT_STAMP=""
 if [ -f "$STAMP_FILE" ]; then

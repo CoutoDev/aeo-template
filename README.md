@@ -35,12 +35,17 @@ próximo boot — um commit quebrado não derruba o site.
 Passos únicos ao lançar uma marca (não se repetem em updates — ver
 "Atualizar o template" abaixo):
 
-1. **Repositório de conteúdo**: crie um repositório GitHub novo pra marca e
-   comece a partir de
-   [`templates/brand-content-example/`](templates/brand-content-example) —
-   copie `pages/`, `faq/`, `posts/` pra **raiz** desse repo novo (não
-   aninhado em `astro/src/content/`; é assim que o backend do Tina espera,
-   ver `tina/schema.ts`).
+1. **Repositório de conteúdo**: crie um repositório GitHub novo e **vazio**
+   pra marca (o `create-brand.mjs` não cria repositórios remotos, só
+   popula um que já existe). Ao rodar `npm run create-brand` (passo 5
+   abaixo), se esse repositório ainda não tiver nenhum commit, o script
+   clona, copia `pages/`, `faq/`, `posts/` de
+   [`templates/brand-content-example/`](templates/brand-content-example) pra
+   **raiz** dele (não aninhado em `astro/src/content/`; é assim que o
+   backend do Tina espera, ver `tina/schema.ts`) e empurra um commit
+   inicial — sem isso, o `entrypoint.sh` falha no boot com um repo de
+   conteúdo sem nenhum commit. Se o repositório já tiver conteúdo, o script
+   não mexe nele.
 2. **Token do GitHub (conteúdo)**: gere um fine-grained Personal Access Token
    (ou deploy key) com escopo restrito a esse repositório único, permissão de
    leitura+escrita em "Contents" — nunca um token amplo de organização (ver
@@ -77,8 +82,9 @@ Passos únicos ao lançar uma marca (não se repetem em updates — ver
    roda o `astro build` completo (mais lento que os restarts seguintes — ver
    "Como uma instância sobe" acima).
 
-Os passos 5 e 6 (copiar `docker-compose.example.yml` e preencher o `.env`) têm
-um atalho: `npm run create-brand -- <diretorio-saida> --site-name ... --site-url
+Os passos 1 (popular o repositório de conteúdo, se estiver vazio), 5 e 6
+(copiar `docker-compose.example.yml` e preencher o `.env`) têm um atalho:
+`npm run create-brand -- <diretorio-saida> --site-name ... --site-url
 ... --site-description ... --domain ... --brand-slug ... --content-repo-url
 ...` gera os dois arquivos prontos (+ `.env.example`, `.gitignore`, `README.md`)
 num diretório novo, que já é o repositório da marca. Rode sem argumentos pra
